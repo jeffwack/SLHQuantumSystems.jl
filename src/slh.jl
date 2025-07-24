@@ -31,7 +31,7 @@ operators(sys)
 returns all the quantum operators contained in the system's Hamiltonian.
 """
 function operators(sys)
-    return get_qsymbols(sys.H)
+    return get_qnumbers(sys.H)
 end
 
 """
@@ -40,7 +40,7 @@ parameters(sys)
 returns all the symbolic numbers contained in the system's Hamiltonian and coupling vector L.
 """
 function parameters(sys::SLH)
-    return union(get_numsymbols(sys.H),get_numsymbols(sum(sys.L)))
+    return union(get_cnumbers(sys.H),get_cnumbers(sum(sys.L)))
 end
 
 

@@ -18,8 +18,8 @@ parameters
 ## Symbolic Utilities
 
 ```@docs
-get_qsymbols
-get_numsymbols
+get_qnumbers
+get_cnumbers
 get_additive_terms
 ```
 
