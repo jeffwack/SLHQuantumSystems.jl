@@ -1,23 +1,20 @@
 """
-    get_qsymbols(expr)
+    get_qnumbers(expr)
 
 Extract all quantum operators from an expression.
 
-Recursively traverses a symbolic expression and returns all quantum operators
-(objects that are neither numbers nor symbolic parameters).
-
 # Arguments
-- `expr`: A symbolic expression containing quantum operators and/or parameters
+- `expr`: A symbolic expression
 
 # Returns
 - `Set`: Set of quantum operators found in the expression
 
 """
-function get_qsymbols(expr)
-    if Symbolics.iscall(expr)
-        return union(get_qsymbols.(Symbolics.arguments(expr))...)
+function get_qnumbers(expr)
+    if SymbolicUtils.iscall(expr)
+        return union(get_qnumbers.(SymbolicUtils.arguments(expr))...)
     else
-        return (expr isa Number) || (expr isa SymbolicUtils.Symbolic) ? Set() : Set([expr])
+        return (expr isa SecondQuantizedAlgebra.QNumber) ? Set{SecondQuantizedAlgebra.QNumber}([expr]) : Set{SecondQuantizedAlgebra.QNumber}()
     end
 end
 
@@ -26,21 +23,18 @@ end
 
 Extract all symbolic parameters from an expression.
 
-Recursively traverses a symbolic expression and returns all symbolic parameters
-(SymbolicUtils.Symbolic objects like those created with @cnumbers).
-
 # Arguments
-- `expr`: A symbolic expression containing quantum operators and/or parameters
+- `expr`: A symbolic expression
 
 # Returns
 - `Set`: Set of symbolic parameters found in the expression
 
 """
-function get_numsymbols(expr)
-    if Symbolics.iscall(expr)
-        return union(get_numsymbols.(Symbolics.arguments(expr))...)
+function get_cnumbers(expr)
+    if SymbolicUtils.iscall(expr)
+        return union(get_cnumbers.(SymbolicUtils.arguments(expr))...)
     else
-        return (expr isa SymbolicUtils.Symbolic) ? Set([expr]) : Set() 
+        return (expr isa SymbolicUtils.Symbolic) ? Set{SymbolicUtils.Symbolic}([expr]) : Set{SymbolicUtils.Symbolic}() 
     end
 end
 
@@ -61,9 +55,9 @@ results in the original expression.
 
 """
 function get_additive_terms(expr)
-    if Symbolics.iscall(expr)
-        op = Symbolics.operation(expr)
-        args = Symbolics.arguments(expr)
+    if SymbolicUtils.iscall(expr)
+        op = SymbolicUtils.operation(expr)
+        args = SymbolicUtils.arguments(expr)
         
         if op === (+)
             # If this is an addition, recursively get terms from each argument
@@ -82,3 +76,24 @@ function get_additive_terms(expr)
         return [expr]
     end
 end
+
+function ordered_qsymbols(expr)
+    if SymbolicUtils.iscall(expr)
+        return cat(ordered_qsymbols.(SymbolicUtils.arguments(expr))...,dims=1)
+    else
+        return (expr isa SecondQuantizedAlgebra.QNumber) ? SecondQuantizedAlgebra.QNumber[expr] : SecondQuantizedAlgebra.QNumber[]
+    end
+end
+
+
+function islinear(expr)
+    terms = get_additive_terms(expr)
+    for term in terms 
+        if length(ordered_qsymbols(term)) > 2
+            return false
+        end
+    end
+    return true
+end
+
+
