@@ -5,34 +5,7 @@ quantum systems using the SLH framework.
 
 ## Quick Start
 
-```@example quick
-using SLHQuantumSystems
-using SecondQuantizedAlgebra
-
-# Create a Hilbert space and operators
-hilb = FockSpace(:cavity)
-
-@qnumbers a::Destroy(hilb)
-@cnumbers ω κ
-
-# Define system components 
-H = ω * a' * a
-L = [sqrt(κ) * a]
-S = [1]
-
-# Create SLH systems
-cavityA = SLH(:A, [:in], [:out], S, L, H)
-cavityB = SLH(:B, [:in], [:out], S, L, H)
-
-sys = concatenate([cavityA, cavityB],:chain)
-sys = feedbackreduce(sys, :A_out, :B_in)
-
-println(sys.H)
-
-# Extract information
-println(operators(sys))        # Get quantum operators
-println(parameters(sys))    # Get symbolic parameters
-```
+See the [Cascaded Cavities example](generated/cascadedcavities.md) to get started with creating and composing quantum systems using the SLH framework.
 ## Overview of SLH systems
 
 The SLH framework represents each open quantum systems with three components:

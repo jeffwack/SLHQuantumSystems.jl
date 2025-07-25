@@ -1,5 +1,9 @@
 using SLHQuantumSystems
 using Documenter
+using Literate
+
+# Generate documentation from Literate examples BEFORE makedocs
+include("generate.jl")
 
 DocMeta.setdocmeta!(SLHQuantumSystems, :DocTestSetup, :(using SLHQuantumSystems); recursive=true)
 
@@ -14,8 +18,10 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Examples" => GENERATED_EXAMPLE_PAGES,
         "API" => "api.md",
         "system building" => "build.md",
+        "Literate Workflow" => "literate-workflow.md",
     ],
 )
 

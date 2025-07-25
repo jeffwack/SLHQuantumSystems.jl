@@ -22,7 +22,21 @@ function slh2abcd(sys::SLH)
     end
 end
 
-function makeA(H,x)
+#Since some of the damping terms end up in A, I should create a single function
+#which calculates the Heisenberg-Langevin equations of motion and then creates
+#A, B, C, and D.
+#
+function dampterms(L,a)
+    return sum([0.5*(Li'*commutator(a,Li) - commutator(a,Li')*Li) for Li in L])
+end
+
+function eqsofmotion(H,L,x)
+    eqs = simplify.(1.0im*commutator.([H],x)+ dampterms.([L],x))
+    return eqs
+end
+
+
+function makedriftA(H,x)
     eqs = simplify.(1.0im*commutator.([H],x))
     terms = get_additive_terms.(eqs)
     args = [SymbolicUtils.arguments.(term) for term in terms]
@@ -44,8 +58,6 @@ function makeA(H,x)
     return A
 end
 
-
-
 function stateidx(op)
     if op isa Destroy
         return 2*op.aon - 1
@@ -66,5 +78,7 @@ function state_vector(H)
     x = sort(ops, by = stateidx)
     return x
 end
+
+
 
 

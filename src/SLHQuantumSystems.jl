@@ -12,7 +12,7 @@ include("slh.jl")
 export SLH, concatenate, feedbackreduce, operators, parameters, promote_name
 
 include("abcd.jl")
-export state_vector, makedriftA
+export state_vector, makedriftA, eqsofmotion
 
 include("componentlibrary.jl")
 export cavity, squeezing_cavity, radiation_pressure_cavity, qed_cavity
