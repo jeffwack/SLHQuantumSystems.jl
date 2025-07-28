@@ -62,7 +62,6 @@ function promote_name(hilb::SecondQuantizedAlgebra.ConcreteHilbertSpace, name)
     return typeof(hilb).name.wrapper(fields...)
 end
 
-
 function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
     #We want to create a new hilbert space where the names of all the subspaces 
     #has name prepended to it. 
@@ -72,10 +71,14 @@ function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
     return tensor(new_spaces...)
 end
 
+
 #This function is for SecondQuantizedAlgebra operators
-function promote_op(operator,old_product_space,new_product_space, topname)
+function promote_op(operator,aon_offset,new_product_space, topname)
+
+    #old method of finding the subspace within the new product space which fails
+    #when old hilbert spaces are identical
     #we identify the hilbert space which our operator acts on, which should be a subspace of the product space
-    
+    #=
     if hasproperty(operator.hilbert,:spaces) #then it is a product space
         subspace = operator.hilbert.spaces[operator.aon]
     else #it is not a product space
@@ -88,6 +91,11 @@ function promote_op(operator,old_product_space,new_product_space, topname)
     if isnothing(subspaceindex)
         error("$operator does not act on a subspace of $product_space")
     end
+    =#
+
+    subspaceindex = aon_offset + operator.aon
+
+
 
     #these next two lines grab the necessary data to construct a new version of the operator on the product space
     #in the case of a Fock space this is just the name of the operator
@@ -115,9 +123,22 @@ SLHSystems are created with a unique name.
 function concatenate(syslist,name)
     old_hilberts = [SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]
     sys_names = [sys.name for sys in syslist]
-    hilb_product = tensor(promote_name.(old_hilberts,sys_names)...)
-    old_hilb_product = tensor(old_hilberts...) # we will pass this to promote to aid in
+    
+    #we want to construct a list of aon_offsets, which consists of the number of
+    #'atomic' or concrete Hilbert spaces accumulated so far.
+    aon_offsets = [0]
+    for hilb in old_hilberts
+        if hilb isa SecondQuantizedAlgebra.ProductSpace
+            push!(aon_offsets, aon_offsets[end] + length(hilb.spaces))
+        elseif hilb isa SecondQuantizedAlgebra.ConcreteHilbertSpace
+            push!(aon_offsets, aon_offsets[end] + 1)
+        else
+            error("don't recognize this Hilbert space")
+        end
+    end
 
+    hilb_product = tensor(promote_name.(old_hilberts,sys_names)...)
+    
     #hilb_product = SecondQuantizedAlgebra.tensor([SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]...)
     
     #We 'stack' the inputs and outputs of the systems we are combining.
@@ -134,11 +155,11 @@ function concatenate(syslist,name)
 
     
     #find and promote old operators to new larger Hilbert space
-    oldopsplusname = [(collect(operators(sys)),sys.name) for sys in syslist]
+    opinfo = [(collect(operators(sys)),sys.name,offset) for (sys,offset) in zip(syslist,aon_offsets)]
     #println(oldopsplusname)
-    newops = [[promote_op(op,old_hilb_product,hilb_product,name) for op in oplist] for (oplist,name) in oldopsplusname]
+    newops = [[promote_op(op,offset,hilb_product,name) for op in oplist] for (oplist,name,offset) in opinfo]
     
-    oldops = [tup[1] for tup in oldopsplusname]
+    oldops = [tup[1] for tup in opinfo]
 
     #promote names of parameters
     oldparamsplusname = [(collect(parameters(sys)),sys.name) for sys in syslist]
