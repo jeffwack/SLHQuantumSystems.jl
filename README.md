@@ -9,8 +9,7 @@ quantum systems using the [SLH framework](https://arxiv.org/abs/1611.00375).
 
 ## Installation
 
-This package is not yet registered as a Julia package. When it is,
-(soon) you will be able to install it with 
+This package is registered in the Julia registry, you can install it with 
 
 ```julia
 |pkg> add SLHQuantumSystems
