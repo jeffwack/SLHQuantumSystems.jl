@@ -11,12 +11,15 @@ function slh2abcd(sys::SLH)
     if !islinear(H)
         return error("Hamiltonian contains non-quadratic terms")
     end
-
-    terms = get_additive_terms(H)
     
     x = state_vector(H)
 
-    for term in terms
+    eqs = eqsofmotion(H,sys.L,x)
+
+    for (ii,eq) in enumerate(eqs) # ii will tell us which operator we are looking at the time derivative of and thus what row of 
+                                  # the resulting matrix we are populating
+        terms = get_additive_terms(eq)
+
         #we want to extract the numerical coefficient and populate the relevant
         #term of the matrix.
     end

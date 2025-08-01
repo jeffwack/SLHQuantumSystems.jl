@@ -64,7 +64,7 @@ using Symbolics
         @test isequal(sum(terms), zero_term)
     end
     
-    @testset "get_qsymbols" begin
+    @testset "get_qnumbers" begin
         # Create test Hilbert space and operators
         hf = FockSpace(:cavity)
         @qnumbers a::Destroy(hf)
@@ -73,31 +73,31 @@ using Symbolics
         @cnumbers g ω κ
         
         # Test 1: Single operator
-        qsyms = get_qsymbols(a)
+        qsyms = get_qnumbers(a)
         @test length(qsyms) == 1
         @test a in qsyms
         
         # Test 2: Multiple operators
         expr = g * a + ω * a'
-        qsyms = get_qsymbols(expr)
+        qsyms = get_qnumbers(expr)
         @test length(qsyms) == 2
         @test a in qsyms
         @test a' in qsyms
         
         # Test 3: Just parameters (no quantum operators)
         param_expr = g + ω * κ
-        qsyms = get_qsymbols(param_expr)
+        qsyms = get_qnumbers(param_expr)
         @test length(qsyms) == 0
         
         # Test 4: Complex expression
         complex_expr = g * a' * a + κ * a
-        qsyms = get_qsymbols(complex_expr)
+        qsyms = get_qnumbers(complex_expr)
         @test length(qsyms) == 2
         @test a in qsyms
         @test a' in qsyms
     end
     
-    @testset "get_numsymbols" begin
+    @testset "get_cnumbers" begin
         # Create test Hilbert space and operators
         hf = FockSpace(:cavity)
         @qnumbers a::Destroy(hf)
@@ -106,13 +106,13 @@ using Symbolics
         @cnumbers g ω κ
         
         # Test 1: Single parameter
-        numsyms = get_numsymbols(g)
+        numsyms = get_cnumbers(g)
         @test length(numsyms) == 1
         @test g in numsyms
         
         # Test 2: Multiple parameters
         expr = g * ω + κ
-        numsyms = get_numsymbols(expr)
+        numsyms = get_cnumbers(expr)
         @test length(numsyms) == 3
         @test g in numsyms
         @test ω in numsyms
@@ -120,14 +120,14 @@ using Symbolics
         
         # Test 3: Parameters with operators
         mixed_expr = g * a + ω * a'
-        numsyms = get_numsymbols(mixed_expr)
+        numsyms = get_cnumbers(mixed_expr)
         @test length(numsyms) == 2
         @test g in numsyms
         @test ω in numsyms
         
         # Test 4: Just operators (no parameters)
         op_expr = a + a'
-        numsyms = get_numsymbols(op_expr)
+        numsyms = get_cnumbers(op_expr)
         @test length(numsyms) == 0
     end
     
@@ -166,7 +166,7 @@ using Symbolics
     @testset "cascade" begin
         # Create two test systems (following the docs quick start pattern)
         hilb = FockSpace(:cavity)
-        @qnumbers a::Destroy(hilb,:a)
+        @qnumbers a::Destroy(hilb)
         @cnumbers ω κ
         
         # Define system components

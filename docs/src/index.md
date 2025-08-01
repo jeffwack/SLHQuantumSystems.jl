@@ -4,8 +4,11 @@ SLHQuantumSystems.jl is a Julia package for creating and composing open
 quantum systems using the SLH framework. 
 
 ## Quick Start
+Get started by running one of the examples!
+```@repl
+include("examples/cascadedcavities.jl")
+```
 
-See the [Cascaded Cavities example](generated/cascadedcavities.md) to get started with creating and composing quantum systems using the SLH framework.
 ## Overview of SLH systems
 
 The SLH framework represents each open quantum systems with three components:
@@ -30,5 +33,8 @@ simple, reusable components
 - [SecondQuantizedAlgebra.jl](https://github.com/qojulia/SecondQuantizedAlgebra.jl) provides the symbolic algebra system for quantum operators
 
 ## References
+
+- This package was inspired by [QNET](https://github.com/mabuchilab/QNET), a
+  python package for working with SLH systems.
 
 - [The SLH framework for modeling quantum input-output networks](https://arxiv.org/pdf/1611.00375)

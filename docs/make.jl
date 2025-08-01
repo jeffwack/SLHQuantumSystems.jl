@@ -20,9 +20,9 @@ makedocs(;
         "Home" => "index.md",
         "Examples" => GENERATED_EXAMPLE_PAGES,
         "API" => "api.md",
-        "system building" => "build.md",
         "Literate Workflow" => "literate-workflow.md",
     ],
+    workdir=joinpath(@__DIR__, "..")
 )
 
 deploydocs(;
