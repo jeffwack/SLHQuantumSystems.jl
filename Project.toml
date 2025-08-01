@@ -1,7 +1,7 @@
 name = "SLHQuantumSystems"
 uuid = "a0b4ee4f-8fee-4001-b7c2-b2f55611dd49"
 authors = ["Jeffrey Wack <jeffwack111@gmail.com> and contributors"]
-version = "0.11.0"
+version = "0.12.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
