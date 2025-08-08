@@ -2,7 +2,7 @@ using Literate
 
 # Define paths
 EXAMPLEDIR = joinpath(@__DIR__, "..", "examples")
-BUILDDIR = joinpath(@__DIR__, "src", "generated")
+BUILDDIR = joinpath(@__DIR__, "src", "notebooks")
 
 # Ensure the build directory exists
 mkpath(BUILDDIR)
@@ -15,7 +15,7 @@ function should_skip_generation()
     for example in example_files
         example_path = joinpath(EXAMPLEDIR, example)
         base_name = splitext(example)[1]
-        output_path = joinpath(BUILDDIR, "$(base_name).md")
+        output_path = joinpath(BUILDDIR, "$(base_name).ipynb")
         
         # If output doesn't exist or is older than source, we need to generate
         if !isfile(output_path) || stat(example_path).mtime > stat(output_path).mtime
@@ -41,7 +41,7 @@ generated_pages = []
 for example in example_files
     example_path = joinpath(EXAMPLEDIR, example)
     base_name = splitext(example)[1]
-    output_path = joinpath(BUILDDIR, "$(base_name).md")
+    output_path = joinpath(BUILDDIR, "$(base_name).ipynb")
     
     if isfile(example_path)
         # Only regenerate if source is newer than output or output doesn't exist
@@ -51,14 +51,13 @@ for example in example_files
             println("Processing: $example")
             
             # Generate markdown for documentation
-            Literate.markdown(
+            Literate.notebook(
                 example_path, 
                 BUILDDIR; 
-                documenter=true,  # Enable Documenter.jl integration
-                execute=false     # Don't execute during docs build for reliability
+                execute=true     # execute during docs to include outputs
             )
             
-            println("  → Generated markdown: $(base_name).md")
+            println("  → Generated notebook: $(base_name).ipynb")
         end
         
         # Always add to pages list (even if not regenerated)
