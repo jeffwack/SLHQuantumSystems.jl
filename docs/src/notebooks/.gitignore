@@ -1,0 +1,4 @@
+# Don't save the rendered notebooks
+*.ipynb
+
+!.gitignore
