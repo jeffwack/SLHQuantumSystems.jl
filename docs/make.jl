@@ -2,7 +2,7 @@ using SLHQuantumSystems
 using Documenter
 using Literate
 
-# Generate documentation from Literate examples BEFORE makedocs
+# Generate documentation from Literate examples before calling makedocs
 include("generate.jl")
 
 DocMeta.setdocmeta!(SLHQuantumSystems, :DocTestSetup, :(using SLHQuantumSystems); recursive=true)

@@ -3,6 +3,7 @@
 # parameters
 
 using SecondQuantizedAlgebra
+using QuantumOptics
 using SLHQuantumSystems
 
 hilb = FockSpace(:cav)
@@ -12,4 +13,4 @@ a = Destroy(hilb, :a)
 
 cavity = SLH(:cav,[:in],[:out],[1],[√κ*a],ω*a'*a)
 
-
+nH = to_numeric(cavity.H, FockBasis(10))

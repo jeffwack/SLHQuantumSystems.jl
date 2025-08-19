@@ -53,12 +53,9 @@ end
 function promote_name(hilb::SecondQuantizedAlgebra.ConcreteHilbertSpace, name)
     names = fieldnames(typeof(hilb))
     fields = [getfield(hilb,name) for name in names] 
-    
-    oldname = pop!(fields)
-
+    oldname = popfirst!(fields)
     newname = Symbol(name,:_,oldname)
     pushfirst!(fields,newname)
-
     return typeof(hilb).name.wrapper(fields...)
 end
 
@@ -66,7 +63,7 @@ function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
     #We want to create a new hilbert space where the names of all the subspaces 
     #has name prepended to it. 
     
-    new_spaces = promote.(hilb.spaces, [name])
+    new_spaces = promote_name.(hilb.spaces, [name])
 
     return tensor(new_spaces...)
 end
@@ -95,16 +92,17 @@ function promote_op(operator,aon_offset,new_product_space, topname)
 
     subspaceindex = aon_offset + operator.aon
 
-
-
     #these next two lines grab the necessary data to construct a new version of the operator on the product space
     #in the case of a Fock space this is just the name of the operator
     #for an NLevelSpace this is the operator name and the names of the two levels it transitions between
     middlefieldnames = fieldnames(typeof(operator))[2:end-2]
     middlefields = [getfield(operator,name) for name in middlefieldnames]
 
-    old_op_name = pop!(middlefields)
+    old_op_name = popfirst!(middlefields)
     new_op_name = Symbol(topname,:_,old_op_name)
+    
+    println(typeof(operator).name.wrapper)
+    println([new_product_space,new_op_name, middlefields...,subspaceindex])
 
     #this calls the operator constructor with the old 'middle data' but on the larger hilbert space
     return typeof(operator).name.wrapper(new_product_space,new_op_name, middlefields...,subspaceindex)
@@ -219,7 +217,7 @@ function feedbackreduce(A,output, input)
 
     Hprime = 1/(2im)*(term1*term2*term3-termA*termB*termC)
 
-    H = A.H + Hprime
+    H = simplify(A.H + Hprime)
 
     return SLH(A.name,newinputs,newoutputs,S,L,H)
 end
