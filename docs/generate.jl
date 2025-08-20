@@ -63,7 +63,8 @@ for example in example_files
         
         # Always add to pages list (even if not regenerated)
         title = titlecase(replace(base_name, r"([a-z])([A-Z])" => s"\1 \2"))
-        push!(generated_pages, title => output_path)
+        relative_path = joinpath("generated", "$(base_name).md")
+        push!(generated_pages, title => relative_path)
         
     else
         @warn "Example file not found: $example_path"
