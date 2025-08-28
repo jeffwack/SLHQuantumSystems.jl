@@ -101,8 +101,8 @@ function promote_op(operator,aon_offset,new_product_space, topname)
     old_op_name = popfirst!(middlefields)
     new_op_name = Symbol(topname,:_,old_op_name)
     
-    println(typeof(operator).name.wrapper)
-    println([new_product_space,new_op_name, middlefields...,subspaceindex])
+    #println(typeof(operator).name.wrapper)
+    #println([new_product_space,new_op_name, middlefields...,subspaceindex])
 
     #this calls the operator constructor with the old 'middle data' but on the larger hilbert space
     return typeof(operator).name.wrapper(new_product_space,new_op_name, middlefields...,subspaceindex)

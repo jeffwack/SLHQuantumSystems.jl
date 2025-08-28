@@ -11,6 +11,6 @@ a = Destroy(hilb, :a)
 
 @cnumbers ω κ
 
-cavity = SLH(:cav,[:in],[:out],[1],[√κ*a],ω*a'*a)
+cav = SLH(:cav,[:in],[:out],[1],[√κ*a],ω*a'*a)
 
-nH = to_numeric(cavity.H, FockBasis(10))
+#nH = to_numeric(cavity.H, FockBasis(10))
