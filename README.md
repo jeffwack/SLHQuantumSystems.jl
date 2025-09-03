@@ -15,4 +15,15 @@ This package is registered in the Julia registry, you can install it with
 |pkg> add SLHQuantumSystems
 ```
 
+## Contributing
+Contributions to this package are welcome! Before making a PR, you should:
+- run the package tests
+```julia
+|pkg> test
+```
+- build the documentation
+```julia
+|pkg> activate ./docs/
+|julia> using LiveServer; servedocs()
+```
 

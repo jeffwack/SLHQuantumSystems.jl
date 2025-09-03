@@ -4,11 +4,25 @@ This documentation uses [Literate.jl](https://fredrikekre.github.io/Literate.jl/
 
 ## How It Works - Script Discovery and Generation
 
-When the documentation is built (`julia docs/make.jl`), the following process occurs:
+When the documentation is built, the following process occurs:
 
-1. **Auto-discovery**: The build system scans `examples/` for all `.jl` files
-2. **Conversion**: Each script is processed by Literate.jl to generate markdown in docs/src/generated/
-3. **Integration**: Generated markdown files are automatically added to the documentation by adding pages in make.jl
+1. **Auto-discovery**: The build system scans `examples/` for all `.jl` files using `walkdir()`
+2. **Conversion**: Each script is processed by Literate.jl to generate markdown in `docs/src/generated/`
+3. **Integration**: Generated markdown files are automatically added to the documentation via `GENERATED_EXAMPLE_PAGES`
+
+## Development with LiveServer
+
+For live development, use LiveServer with proper configuration to avoid double triggers:
+
+```julia
+using LiveServer
+servedocs(literate_dir="examples", skip_dir="docs/src/generated")
+```
+
+This setup:
+- Watches source files for changes and rebuilds docs automatically
+- Uses `literate_dir="examples"` to tell LiveServer where the Literate scripts are
+- Uses `skip_dir="docs/src/generated"` to prevent watching generated files (avoids infinite loops)
 
 ## Writing Literate Scripts
 
@@ -24,18 +38,30 @@ See [the Literate.jl docs](https://fredrikekre.github.io/Literate.jl/v2/) for mo
 
 ```
 SLHQuantumSystems.jl/
-├── examples/
-│   ├── cascadedcavities.jl     # Literate script
-│   └── newexample.jl           # Automatically discovered
+├── examples/                    # Literate scripts (input)
+│   ├── cascadedcavities.jl     
+│   ├── cavityfeedback.jl       
+│   └── fabry_perot.jl          # Automatically discovered
 ├── docs/
 │   ├── src/
-│   │   ├── generated/          # Auto-generated (don't edit!)
+│   │   ├── generated/          # Auto-generated markdown (don't edit!)
 │   │   │   ├── cascadedcavities.md
-│   │   │   └── newexample.md
-│   │   └── index.md
-│   ├── generate.jl             # Generation script
-│   └── make.jl                 # Documentation build
+│   │   │   ├── cavityfeedback.md
+│   │   │   └── fabry_perot.md
+│   │   ├── index.md
+│   │   └── api.md
+│   ├── generate.jl             # Literate processing script
+│   └── make.jl                 # Documenter build script
 ```
+
+## Build Process
+
+The workflow follows the official LiveServer + Literate.jl pattern:
+
+1. **generate.jl**: Uses `walkdir()` to discover all `.jl` files in `examples/`
+2. **Literate.markdown()**: Converts each script to markdown with `documenter=true, execute=false`
+3. **make.jl**: Includes `generate.jl`, then runs `makedocs()` with dynamically generated pages
+4. **LiveServer**: Watches files but skips the generated directory to prevent double builds
 
 ## Adding New Examples
 
