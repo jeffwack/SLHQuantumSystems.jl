@@ -1,3 +1,14 @@
+struct StateSpace
+    name
+    inputs
+    outputs
+    A
+    B
+    C
+    D
+end
+
+# This ignores S for now
 function slh2abcd(sys::SLH)
     hilb = SecondQuantizedAlgebra.hilbert(sys.H)
     for subspace in hilb.spaces
@@ -7,22 +18,22 @@ function slh2abcd(sys::SLH)
     end
 
     H = sys.H
+    L = sys.L
+    N = 2*length(L)
 
     if !islinear(H)
         return error("Hamiltonian contains non-quadratic terms")
     end
     
     x = state_vector(H)
+    
+    A = makedriftA(H,L,x)
+    B = makeinputB(L,x)
+    C = B'
+    D = Matrix{Int}(I, N, N)
 
-    eqs = eqsofmotion(H,sys.L,x)
+    return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
 
-    for (ii,eq) in enumerate(eqs) # ii will tell us which operator we are looking at the time derivative of and thus what row of 
-                                  # the resulting matrix we are populating
-        terms = get_additive_terms(eq)
-
-        #we want to extract the numerical coefficient and populate the relevant
-        #term of the matrix.
-    end
 end
 
 #Since some of the damping terms end up in A, I should create a single function
@@ -39,26 +50,41 @@ function eqsofmotion(H,L,x)
 end
 
 
-function makedriftA(H,x)
-    eqs = simplify.(1.0im*commutator.([H],x))
+function makedriftA(H,L,x)
+    eqs = eqsofmotion(H,L,x)
     terms = get_additive_terms.(eqs)
     args = [SymbolicUtils.arguments.(term) for term in terms]
     
     N = length(x)
 
-    A = Array{Any}(zeros(4, 4))
+    A = Array{Any}(zeros(N, N))
 
     #now we can build A one row at a time
     for (ii,row) in enumerate(args)
-        for arg in row
-            qsym = first(filter(q->q isa SecondQuantizedAlgebra.QNumber,arg))
-            idx = findfirst(q->q==qsym, x) #find the index in the state vector
-            coeff = *(filter(c->c isa SymbolicUtils.Symbolic,arg)...)
-            A[ii,idx] = coeff
+        for arglist in row
+            qsym = arglist[findfirst(q->q isa SecondQuantizedAlgebra.QNumber, arglist)] #find the operator (assumes there is only one!)
+            idx = findfirst(q->q==qsym, x)                                             #find the index in the state vector
+            coeff = *(filter(c->!(c isa SecondQuantizedAlgebra.QNumber), arglist)...) # the coefficient is everything else
+            A[ii,idx] += coeff
         end
     end
 
     return A
+end
+
+function makeinputB(L,x)
+    N = 2*length(L)
+    M = length(x)
+    B = Array{Any}(zeros(M,N))
+    
+    for (ii, a) in enumerate(x)
+        for (jj, c) in enumerate(L)
+            B[ii,2*jj-1] = simplify(-1*commutator(a,c'))
+            B[ii,2*jj] = simplify(commutator(a,c))
+        end
+    end
+
+    return B
 end
 
 function stateidx(op)
