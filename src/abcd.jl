@@ -108,6 +108,15 @@ function state_vector(H)
     return x
 end
 
+function Symbolics.substitute(sys::StateSpace, dict)
+    newA = Symbolics.substitute.(sys.A, [dict])
+    newB = Symbolics.substitute.(sys.B, [dict])
+    newC = Symbolics.substitute.(sys.C, [dict])
+    newD = Symbolics.substitute.(sys.D, [dict])
 
+    return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
+end
 
-
+function fresponse(sys, omega)
+    return sys.C*inv(1.0im*omega*diagm(0=>fill(1., size(sys.A,1)))-sys.A)*sys.B + sys.D
+end

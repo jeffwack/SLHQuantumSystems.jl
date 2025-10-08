@@ -1,7 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 QuantumOptics = "6e0679c1-51ea-5a7c-ac74-d61b76210b0c"
 SLHQuantumSystems = "a0b4ee4f-8fee-4001-b7c2-b2f55611dd49"
 SecondQuantizedAlgebra = "f7aa4685-e143-4cb6-a7f3-073579757907"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
