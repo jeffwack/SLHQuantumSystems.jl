@@ -1,19 +1,19 @@
-# Here we define a one-sided Fabry-Perot cavity as an SLH system, and perform some simple
-# numerical experiments on it to demonstrate basic simulations with physical
-# parameters
-
 using SecondQuantizedAlgebra
-using QuantumOptics
 using SLHQuantumSystems
+using Symbolics
+
 
 hilb = FockSpace(:cav)
 a = Destroy(hilb, :a)
 
-@cnumbers ω κ
+@cnumbers ω κ_L κ_R
 
-cav = SLH(:cav,[:in],[:out],[1],[√κ*a],ω*a'*a)
+cav = SLH(:cav,[:in_L, :in_R],[:out_L, :out_R],[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
+
+cavSS = slh2abcd(cav)
+
+paramdict = Dict([ω => 0, κ_L => 3, κ_R => 2])
+
+numcav = substitute(cavSS,paramdict)
 
 
-
-
-#nH = to_numeric(cavity.H, FockBasis(10))

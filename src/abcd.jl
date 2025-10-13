@@ -11,8 +11,14 @@ end
 # This ignores S for now
 function slh2abcd(sys::SLH)
     hilb = SecondQuantizedAlgebra.hilbert(sys.H)
-    for subspace in hilb.spaces
-        if !(subspace isa FockSpace)
+    if hilb isa SecondQuantizedAlgebra.ProductSpace    
+        for subspace in hilb.spaces
+            if !(subspace isa FockSpace)
+                return error("Hilbert space contains non-bosonic modes")
+            end
+        end
+    else
+        if !(hilb isa FockSpace)
             return error("Hilbert space contains non-bosonic modes")
         end
     end
