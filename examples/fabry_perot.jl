@@ -1,7 +1,7 @@
 using SecondQuantizedAlgebra
 using SLHQuantumSystems
 using Symbolics
-
+using GLMakie
 
 hilb = FockSpace(:cav)
 a = Destroy(hilb, :a)
@@ -16,4 +16,7 @@ paramdict = Dict([ω => 0, κ_L => 3, κ_R => 2])
 
 numcav = substitute(cavSS,paramdict)
 
+freq = collect(logrange(0.01,100,200))
+
+tf = fresponse(numcav,freq)
 

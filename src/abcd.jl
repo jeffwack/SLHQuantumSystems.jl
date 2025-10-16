@@ -123,6 +123,18 @@ function Symbolics.substitute(sys::StateSpace, dict)
     return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
 end
 
-function fresponse(sys, omega)
-    return sys.C*inv(1.0im*omega*diagm(0=>fill(1., size(sys.A,1)))-sys.A)*sys.B + sys.D
+function fresponse(sys, omegalist)
+    return fresponse(Matrix{Complex}(sys.A),
+                     Matrix{Complex}(sys.B),
+                     Matrix{Complex}(sys.C),
+                     Matrix{Complex}(sys.D),
+                     omegalist)
+end
+
+function fresponse(A::Matrix{Complex},B::Matrix{Complex},C::Matrix{Complex},D::Matrix{Complex}, omegalist::Vector{Float64})
+    Qlist = [Matrix{Complex}(1.0im*omega*I-A) for omega in omegalist]
+    matrices = [C*inv(Q)*B + D for Q in Qlist]
+    P = matrices[1]
+    matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
+    return matrixoflists
 end
