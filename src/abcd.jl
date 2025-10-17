@@ -138,3 +138,40 @@ function fresponse(A::Matrix{Complex},B::Matrix{Complex},C::Matrix{Complex},D::M
     matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
     return matrixoflists
 end
+
+function toquadrature(M::Matrix)
+    #the size of the matrix must be even in both dimensions
+    (m,n) = size(M)
+    if mod(m,2) == 0
+        p = Int(m/2)
+    else
+        error("the size of the matrix must be even in both dimensions")
+    end
+    if mod(n,2) == 0
+        q = Int(n/2)
+    else
+        error("the size of the matrix must be even in both dimensions")
+    end
+    
+    A = 1/sqrt(2)*[1 1; -1 1]
+    
+    left = cat(fill(A,p)...;dims=(1,2))
+    right = cat(fill(inv(A),q)...;dims=(1,2))
+    
+    return left*M*right
+end
+
+function toquadrature(sys::StateSpace)
+    oldA = sys.A
+    oldB = sys.B 
+    oldC = sys.C 
+    oldD = sys.D
+
+
+    newA = toquadrature(oldA)
+    newB = toquadrature(oldB)
+    newC = toquadrature(oldC) 
+    newD = toquadrature(oldD)
+
+    return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
+end
