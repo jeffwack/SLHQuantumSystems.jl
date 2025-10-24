@@ -8,7 +8,12 @@ struct StateSpace
     D
 end
 
-# This ignores S for now
+"""
+    slh2abcd(sys::SLH)
+Convert a linear quantum system from SLH representation to ABCD representation.
+
+This implements eq. 111 from Combes (2017). The name of the new system, as well as the names of its imputs and outputs will be directly inherited from the input system.
+"""
 function slh2abcd(sys::SLH)
     hilb = SecondQuantizedAlgebra.hilbert(sys.H)
     if hilb isa SecondQuantizedAlgebra.ProductSpace    
@@ -23,8 +28,10 @@ function slh2abcd(sys::SLH)
         end
     end
 
-    H = sys.H
+    S = sys.S
     L = sys.L
+    H = sys.H
+
     N = 2*length(L)
 
     if !islinear(H)
@@ -35,11 +42,21 @@ function slh2abcd(sys::SLH)
     
     A = makedriftA(H,L,x)
     B = makeinputB(L,x)
-    C = B'
+    C = Matrix(B')
     D = Matrix{Int}(I, N, N)
 
     return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
 
+end
+
+## TODO: implement Combes constructions
+## make separate types for passive and active linear systems?
+function makephi(H,x)
+    terms = get_additive_terms.(H)
+    phi = Array{Any}(zeros(N, N))
+    for term in terms
+        args = SymbolicUtils.arguments(term)
+    end
 end
 
 #Since some of the damping terms end up in A, I should create a single function
@@ -54,7 +71,6 @@ function eqsofmotion(H,L,x)
     eqs = simplify.(1.0im*commutator.([H],x)+ dampterms.([L],x))
     return eqs
 end
-
 
 function makedriftA(H,L,x)
     eqs = eqsofmotion(H,L,x)
@@ -137,6 +153,14 @@ function fresponse(A::Matrix{Complex},B::Matrix{Complex},C::Matrix{Complex},D::M
     P = matrices[1]
     matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
     return matrixoflists
+end
+
+function symbfresponse(sys::StateSpace)
+
+    @variables s
+    iden = Matrix{Int}(I, size(sys.A)...)
+    G =  inv(s*iden - sys.A)
+    return simplify.(sys.C*G*sys.B + sys.D)
 end
 
 function toquadrature(M::Matrix)

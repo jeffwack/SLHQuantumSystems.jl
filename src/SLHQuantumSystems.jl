@@ -13,7 +13,7 @@ export SLH, concatenate, feedbackreduce, operators, parameters, promote_name
 
 import Symbolics.substitute
 include("abcd.jl")
-export state_vector, makedriftA, makeinputB, eqsofmotion, slh2abcd, fresponse, toquadrature
+export state_vector, makedriftA, makeinputB, eqsofmotion, slh2abcd, fresponse, toquadrature, symbfresponse
 
 include("componentlibrary.jl")
 export cavity, squeezing_cavity, radiation_pressure_cavity, qed_cavity
