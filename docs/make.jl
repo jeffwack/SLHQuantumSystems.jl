@@ -1,11 +1,14 @@
 using SLHQuantumSystems
 using Documenter
+using DocumenterCitations
 using Literate
 
 # Generate documentation from Literate examples before calling makedocs
 include("generate.jl")
 
 DocMeta.setdocmeta!(SLHQuantumSystems, :DocTestSetup, :(using SLHQuantumSystems); recursive=true)
+
+bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
 makedocs(;
     modules=[SLHQuantumSystems],
@@ -19,10 +22,12 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Examples" => GENERATED_EXAMPLE_PAGES,
+        "Linear quantum networks" => "LinearQuantumNetworks.md",
         "API" => "api.md",
         "Literate Workflow" => "literate-workflow.md",
     ],
-    workdir=joinpath(@__DIR__, "..")
+    workdir=joinpath(@__DIR__, ".."),
+    plugins=[bib]
 )
 
 deploydocs(;

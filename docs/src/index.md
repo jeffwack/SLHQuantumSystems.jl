@@ -37,4 +37,7 @@ simple, reusable components
 - This package was inspired by [QNET](https://github.com/mabuchilab/QNET), a
   python package for working with SLH systems.
 
-- [The SLH framework for modeling quantum input-output networks](https://arxiv.org/pdf/1611.00375)
+- [The SLH framework for modeling quantum input-output networks](https://arxiv.org/pdf/1611.00375) [Combes_Kerckhoff_Sarovar_2017](@cite)
+
+```@bibliography
+```

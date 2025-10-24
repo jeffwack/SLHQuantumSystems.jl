@@ -55,9 +55,9 @@ Create SLH systems
 ````@example cascadedcavities
 cavityA = SLH(:A, [:in], [:out], S, L, H)
 cavityB = SLH(:B, [:in], [:out], S, L, H)
-````
 
-## System Composition
+# System Composition
+````
 
 We concatenate the systems in a chain configuration, then apply feedback
 to connect the output of cavity A to the input of cavity B:
