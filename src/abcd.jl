@@ -8,6 +8,84 @@ struct StateSpace
     D
 end
 
+struct PassiveStateSpace
+    name
+    inputs
+    outputs
+    A
+    B
+    C
+    D
+end
+
+function StateSpace(sys::SLH)
+
+    S = sys.S
+    L = sys.L
+    H = sys.H
+    
+    # First we need to ensure that this is a linear quantum system.
+    # This means is consists of bosonic modes with quadratic couplings
+    hilb = SecondQuantizedAlgebra.hilbert(H)
+    if hilb isa SecondQuantizedAlgebra.ProductSpace    
+        for subspace in hilb.spaces
+            if !(subspace isa FockSpace)
+                return error("Hilbert space contains non-bosonic modes")
+            end
+        end
+    else
+        if !(hilb isa FockSpace)
+            return error("Hilbert space contains non-bosonic modes")
+        end
+    end
+    
+    # We create a vector which contains the creation and annihilation operators
+    # of the system. For now we assume we are in that basis rather than
+    # quadratures.
+    x = filter!(q->q isa Destroy,state_vector(H))
+    m = length(x)
+
+    # Now we go through every pair of annihilation operators and look for the
+    # corresponding terms in the Hamiltonian
+    terms = get_additive_terms(H)
+    args = [SymbolicUtils.arguments(term) for term in terms]
+    
+    omegaminus = Array{Any}(zeros(m, m))
+    #omegaminus = Array{Any}(zeros(m, m))
+
+    for (j,aj) in enumerate(x)
+        filteredterms = filter(list -> aj' in list, args)
+        for (k, ak) in enumerate(x)
+            term = first(filter(list -> ak in list,filteredterms))
+            #types = typeof.(term)
+            coef = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+            omegaminus[j,k] = coef
+        end
+    end
+
+    #Now we parse L
+    phiminus = Array{Any}(zeros(length(L), m))
+
+    for (j,op) in enumerate(L)
+        terms = get_additive_terms(op)
+        args = [SymbolicUtils.arguments(term) for term in terms]
+        for (k, ak) in enumerate(x)
+            term = first(filter(list -> ak in list,args))
+            coef = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+            phiminus[j,k] = coef
+        end
+    end
+    
+    newS = 
+
+    A = -0.5*phi'*phi - 1.0im*omega
+    B = -omega'*S
+    C = omega
+    D = S
+
+    return PassiveStateSpace(sys.name, sys.inputs,sys.outputs, A,B,C,D)
+    
+end
 """
     slh2abcd(sys::SLH)
 Convert a linear quantum system from SLH representation to ABCD representation.
@@ -56,6 +134,7 @@ function makephi(H,x)
     phi = Array{Any}(zeros(N, N))
     for term in terms
         args = SymbolicUtils.arguments(term)
+
     end
 end
 

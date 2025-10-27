@@ -48,7 +48,7 @@ end
 function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
     old_sym = parameter.metadata[Symbolics.VariableSource][2]
     new_sym = Symbol(topname,:_,old_sym)
-    return cnumber(new_sym)
+    return rnumber(new_sym)
 end
 
 function promote_name(hilb::SecondQuantizedAlgebra.ConcreteHilbertSpace, name)

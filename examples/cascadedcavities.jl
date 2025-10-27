@@ -18,7 +18,7 @@ using SecondQuantizedAlgebra
 hilb = FockSpace(:cavity)
 
 @qnumbers a::Destroy(hilb)
-@cnumbers ω κ
+@rnumbers ω γ
 
 # ## Defining System Components
 #
@@ -31,7 +31,7 @@ hilb = FockSpace(:cavity)
 
 # Define system components 
 H = ω * a' * a      # Harmonic oscillator Hamiltonian
-L = [sqrt(κ) * a]   # Coupling to environment (decay)
+L = [γ * a]   # Coupling to environment (decay)
 S = [1]             # No direct scattering
 
 # ## Building the Cascaded System
