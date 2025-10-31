@@ -15,6 +15,11 @@ operators
 parameters
 ```
 
+## Conversion
+```@docs
+slh2abcd
+```
+
 ## Symbolic Utilities
 
 ```@docs
