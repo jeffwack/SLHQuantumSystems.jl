@@ -21,13 +21,13 @@ function cavity(name)
     hilb = FockSpace(name)
     a = Destroy(hilb,:a)
 
-    (κ, Δ) = cnumbers(:κ,:Δ)
+    (κ, Δ) = rnumbers(:κ,:Δ)
 
     return SLH(name,
                 [:In],
                 [:Out],
                 [1],
-                [sqrt(κ)*a],
+                [κ*a],
                 Δ*adjoint(a)*a)
 end
 
@@ -61,11 +61,11 @@ function qed_cavity(name)
 
     σ(i,j) = Transition(hilb, :σ, i, j, 2)
 
-    (Δ, g, κ, h) = cnumbers(:Δ,:g,:κ,:h)
+    (Δ, g, κ, h) = rnumbers(:Δ,:g,:κ,:h)
 
     # Hamiltonian
     H = Δ*a'*a + g*(a'*σ(1,2) + a*σ(2,1)) + h*(a + a')
-    L = [sqrt(κ)*a]
+    L = [κ*a]
 
     return SLH(name,
                 [:In],
@@ -98,13 +98,13 @@ function squeezing_cavity(name)
     hilb = FockSpace(:squeezer)
     a = Destroy(hilb, :a)
 
-    (κ,ϵ) = cnumbers(:κ,:ϵ)
+    (κ,ϵ) = rnumbers(:κ,:ϵ)
 
     return SLH(name,
                 [:In],
                 [:Out],
                 [1],
-                [sqrt(κ)*a],
+                [κ*a],
                 1im*ϵ*(adjoint(a)^2- a^2))
 end
 
@@ -133,12 +133,12 @@ function radiation_pressure_cavity(name)
     a = Destroy(hilb,:a,1) 
     b = Destroy(hilb,:b,2) 
 
-    (κ, Δ, Ω, g) = cnumbers(:κ,:Δ,:Ω,:g)
+    (κ, Δ, Ω, g) = rnumbers(:κ,:Δ,:Ω,:g)
 
     return SLH(name,
                 [:In],
                 [:Out],
                 [1],
-                [sqrt(κ)*a],
+                [κ*a],
                 Δ*a'*a+Ω*b'*b - g*a'*a*(b'+b))
 end
