@@ -17,13 +17,10 @@ quadcavSS = toquadrature(cavSS)
 aasymbtfs = symbfresponse(cavSS)
 quadsymbtfs = symbfresponse(quadcavSS)
 
-paramdict = Dict([ω => 0, κ_L => 3, κ_R => 2])
+paramdict = Dict([ω => 10, κ_L => 3, κ_R => 2])
 
 numcav = substitute(cavSS,paramdict)
 
 numcavquad = toquadrature(numcav)
 
-freq = collect(logrange(0.01,100,200))
-
-tf = fresponse(numcav,freq)
 
