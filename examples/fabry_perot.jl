@@ -23,4 +23,4 @@ numcav = substitute(cavSS,paramdict)
 
 numcavquad = toquadrature(numcav)
 
-
+bode(numcavquad,:in_L,:out_R,collect(logrange(1,10000,100)))

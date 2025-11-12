@@ -64,11 +64,17 @@ function StateSpace(sys::SLH)
             k = first(findall(q->q==de,x))
 
             omegaminus[j,k] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
-        elseif length(creators) == 2 && creators[1] == creators[2]
-            cr = first(creators)
-            j = first(findall(q->q==cr',x))
-            omegaplus[j,j] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
-        elseif length(creators) == 0 && destroyers[1] == destroyers[2]
+        elseif length(creators) == 2 #&& creators[1] == creators[2]
+            cr1 = creators[1]
+            j = first(findall(q->q==cr1',x))
+
+            cr2 = creators[2]
+            k = first(findall(q->q==cr2',x))
+            
+            coef = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+            omegaplus[j,k] = coef
+            omegaplus[k,j] = coef
+        elseif length(creators) == 0 #&& destroyers[1] == destroyers[2]
             de = first(destroyers)
             j = first(findall(q->q==de,x))
             #If H is Hermitian then this is already handled
@@ -120,7 +126,7 @@ function StateSpace(sys::SLH)
             conj.(phiplus) conj.(phiminus)]
 
     Omega = [omegaminus omegaplus;
-            conj.(omegaplus) conj.(omegaminus)]
+            -conj.(omegaplus) -conj.(omegaminus)]
 
     
     A = -0.5*J(m)*Phi'*J(n)*Phi - 1.0im*Omega
@@ -167,18 +173,18 @@ end
     slh2abcd(sys::SLH)
 Convert a linear quantum system from SLH representation to ABCD representation.
 
-This implements eq. 111 from Combes (2017). The name of the new system, as well as the names of its imputs and outputs will be directly inherited from the input system.
+The name of the new system, as well as the names of its imputs and outputs will be directly inherited from the input system.
 """
 function slh2abcd(sys::SLH)
     hilb = SecondQuantizedAlgebra.hilbert(sys.H)
     if hilb isa SecondQuantizedAlgebra.ProductSpace    
         for subspace in hilb.spaces
-            if !(subspace isa FockSpace)
+            if !(subspace isa FockSpace || subspace isa PhaseSpace)
                 return error("Hilbert space contains non-bosonic modes")
             end
         end
     else
-        if !(hilb isa FockSpace)
+        if !(hilb isa FockSpace || hilb isa PhaseSpace)
             return error("Hilbert space contains non-bosonic modes")
         end
     end
@@ -194,13 +200,14 @@ function slh2abcd(sys::SLH)
     end
     
     x = state_vector(H)
-    
-    A = makedriftA(H,L,x)
-    B = makeinputB(L,x)
-    C = Matrix(B')
-    D = Matrix{Int}(I, N, N)
 
-    return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
+    eqs = eqsofmotion(H,L,x)
+    terms = get_additive_terms.(eqs)
+    args = [SymbolicUtils.arguments.(term) for term in terms]
+
+    return error("not implemented")
+    
+    #return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
 
 end
 
@@ -215,10 +222,7 @@ function makephi(H,x)
     end
 end
 
-#Since some of the damping terms end up in A, I should create a single function
-#which calculates the Heisenberg-Langevin equations of motion and then creates
-#A, B, C, and D.
-#
+
 function dampterms(L,a)
     return sum([0.5*(Li'*commutator(a,Li) - commutator(a,Li')*Li) for Li in L])
 end
@@ -266,9 +270,9 @@ function makeinputB(L,x)
 end
 
 function stateidx(op)
-    if op isa Destroy
+    if op isa Destroy || op isa Position
         return 2*op.aon - 1
-    elseif op isa Create
+    elseif op isa Create || op isa Momentum
         return 2*op.aon
     else
         return error("Can't assign index to non-bosonic operator")
@@ -333,7 +337,7 @@ function toquadrature(M::Matrix)
         error("the size of the matrix must be even in both dimensions")
     end
     
-    A = 1/sqrt(2)*[1 1; -1 1]
+    A = 1/sqrt(2)*[1 1; -im im]
     
     left = cat(fill(A,p)...;dims=(1,2))
     right = cat(fill(inv(A),q)...;dims=(1,2))
