@@ -6,9 +6,9 @@ using Makie
 __init__() = println("Plotting extension loaded (backend: $(Makie.current_backend()))")
 
 function SLHQuantumSystems.bode(sys::StateSpace,input,output,freq)
-    tfs = fresponse(sys,freq)
-    j = first(findall(name->name==output,sys.outputs))
-    i = first(findall(name->name==input,sys.inputs))
+    tfs = fresponse_allIO(sys,freq)
+    j = first(findall(name->name==output[1],sys.outputs))+output[2]-1
+    i = first(findall(name->name==input[1],sys.inputs))+input[2]-1
 
     tf = tfs[i,j]
 

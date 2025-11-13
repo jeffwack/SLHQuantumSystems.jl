@@ -142,6 +142,12 @@ function StateSpace(sys::SLH)
     C = P(n)*C*P(m)'
     D = P(n)*D*P(n)'
 
+    #Symbolic simplification
+    A = Symbolics.simplify.(A)
+    B = Symbolics.simplify.(B)
+    C = Symbolics.simplify.(C)
+    D = Symbolics.simplify.(D)
+
     return StateSpace(sys.name, sys.inputs,sys.outputs, A,B,C,D)
     
 end
@@ -299,17 +305,30 @@ function Symbolics.substitute(sys::StateSpace, dict)
     return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
 end
 
-function fresponse(sys, omegalist)
-    return fresponse(Matrix{Complex}(sys.A),
-                     Matrix{Complex}(sys.B),
-                     Matrix{Complex}(sys.C),
-                     Matrix{Complex}(sys.D),
-                     omegalist)
+function resolvent(A,omegalist)
+    return [inv(Matrix{Complex}(1.0im*omega*I - A)) for omega in omegalist]
 end
 
-function fresponse(A::Matrix{Complex},B::Matrix{Complex},C::Matrix{Complex},D::Matrix{Complex}, omegalist::Vector{Float64})
-    Qlist = [Matrix{Complex}(1.0im*omega*I-A) for omega in omegalist]
-    matrices = [C*inv(Q)*B + D for Q in Qlist]
+#for now we will take from and to as integers
+function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from, to)
+    A = Matrix{Complex}(sys.A)
+    C = Matrix{Complex}(sys.C)
+    
+    Rlist = resolvent(A,omegalist)
+
+    return [C[to,:]'*R[:,from] for R in Rlist]
+end
+
+function fresponse_allIO(sys::StateSpace, omegalist::Vector{Float64})
+
+    A = Matrix{Complex}(sys.A)
+    B = Matrix{Complex}(sys.B)
+    C = Matrix{Complex}(sys.C)
+    D = Matrix{Complex}(sys.D)
+    
+    Rlist = resolvent(A,omegalist)
+
+    matrices = [C*R*B + D for R in Rlist]
     P = matrices[1]
     matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
     return matrixoflists

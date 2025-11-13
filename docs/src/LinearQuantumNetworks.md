@@ -82,4 +82,7 @@ a^\dagger_m(t)
 Where ``T_m = I_m \otimes T`` and we have defined ``T`` to be the single mode
 transformation matrix.
 
+## Named Inputs and Outputs
 
+Our SLH systems have named input and output ports. When dealing with linear systems, we double the number of inputs and outputs by considering annihilation and creation
+operators or both quadratures separately. When specifying a single quadrature, use the syntax [:in][1]. 

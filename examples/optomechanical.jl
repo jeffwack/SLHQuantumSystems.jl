@@ -24,15 +24,27 @@ optomech = SLH(:opto, [:in], [:out], S, L, H)
 
 hilb = FockSpace(:light)⊗FockSpace(:mirror)
 
-al = Destroy(hilb,:l,1)
-am = Destroy(hilb,:m,2)
+a = Destroy(hilb,:a,1)
+b = Destroy(hilb,:b,2)
 
-@rnumbers ω g κ
+@rnumbers ω g κ Γ 
 
-H = ω*am'*am + g*(al' + al)*(am' + am)
-L = [κ*al]
-S = [1]
+#Hamiltonian (Chen 2013 eq 2.4)
+H = ω*b'*b - g*(b'+b)*(a' + a)
+L = [κ*a,Γ*b]
+S = [1 0; 0 1]
 
-slh = SLH(:opto, [:in], [:out], S, L, H)
+slh = SLH(:opto, [:in,:mi], [:out,:mo], S, L, H)
 aass = StateSpace(slh)
 qss = toquadrature(aass)
+
+#Now we want to substitute numerical values.
+
+paramdict = Dict([ω => 10, κ => 100,g=>1000,Γ => 1])
+
+numeric = substitute(qss,paramdict)
+
+freq = collect(logrange(0.01,10000,1000))
+
+N = fresponse_allIO(numeric,freq)
+S = fresponse_state2output(numeric, freq, 1,2)
