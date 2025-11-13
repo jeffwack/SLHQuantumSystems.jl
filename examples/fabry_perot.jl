@@ -10,12 +10,12 @@ a = Destroy(hilb, :a)
 
 cav = SLH(:cav,[:in_L, :in_R],[:out_L, :out_R],[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
 
-cavSS = slh2abcd(cav)
+cavSS = StateSpace(cav)
 
 quadcavSS = toquadrature(cavSS)
 
-aasymbtfs = symbfresponse(cavSS)
-quadsymbtfs = symbfresponse(quadcavSS)
+#aasymbtfs = symbfresponse(cavSS)
+#quadsymbtfs = symbfresponse(quadcavSS)
 
 paramdict = Dict([ω => 10, κ_L => 3, κ_R => 2])
 
