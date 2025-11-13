@@ -20,7 +20,7 @@ LinearAlgebra = "1.11.0"
 Makie = "0.24.6"
 SecondQuantizedAlgebra = "0.3.1,0.4"
 SymbolicUtils = "3.29.0, 4"
-Symbolics = "6.45.0"
+Symbolics = "6.45.0, 7"
 julia = "1.11.5"
 
 [extras]
