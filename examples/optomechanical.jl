@@ -1,6 +1,6 @@
 using SLHQuantumSystems
 using SecondQuantizedAlgebra
-
+using Symbolics
 #=
 #following 1.5.4 in Linear Dynamical Quantum Systems we will build the Hamiltonian in the quadrature basis
 hilb = PhaseSpace(:light) ⊗ PhaseSpace(:mirror)
