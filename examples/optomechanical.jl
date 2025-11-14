@@ -40,7 +40,7 @@ qss = toquadrature(aass)
 
 #Now we want to substitute numerical values.
 
-paramdict = Dict([ω => 10, κ => 100,g=>1000,Γ => 1])
+paramdict = Dict([ω => 0.1, κ => sqrt(2*2*pi*100),g=>1000,Γ => 0.001])
 
 numeric = substitute(qss,paramdict)
 
@@ -48,3 +48,13 @@ freq = collect(logrange(0.01,10000,1000))
 
 N = fresponse_allIO(numeric,freq)
 S = fresponse_state2output(numeric, freq, 1,2)
+
+fig = Figure()
+ax = Axis(fig[1,1],xscale=log10, yscale=log10)
+scatter!(ax,freq,abs.(N[2,2]);label="2,2")
+scatter!(ax,freq,abs.(N[2,1]);label="2,1")
+scatter!(ax,freq,abs.(N[2,1]-N[2,2]);label="sum")
+scatter!(ax,freq,abs.(S);label="signal")
+axislegend(ax)
+fig
+
