@@ -1,8 +1,9 @@
 using SLHQuantumSystems
 
-SQZ = squeezing_cavity(:A)
-FCV = cavity(:B)
+SQZ = squeezing_cavity("A")
+FCV = cavity("B")
 
-SYS = feedbackreduce(concatenate([SQZ,FCV],:sys),:A_Out,:B_In)
+SYS = concatenate([SQZ,FCV],"sys")
+SYS = feedbackreduce(SYS,"A_out","B_in")
 
 SS = StateSpace(SYS)

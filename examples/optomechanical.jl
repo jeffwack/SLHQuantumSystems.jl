@@ -35,7 +35,7 @@ H = ω*b'*b - g*(b'+b)*(a' + a)
 L = [κ*a,Γ*b]
 S = [1 0; 0 1]
 
-slh = SLH(:opto, [:in,:mi], [:out,:mo], S, L, H)
+slh = SLH("opto", S, L, H)
 aass = StateSpace(slh)
 qss = toquadrature(aass)
 

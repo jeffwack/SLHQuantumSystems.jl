@@ -8,6 +8,8 @@ using Symbolics
 include("qsymbols.jl")
 export get_qnumbers, get_cnumbers, get_additive_terms, islinear, ordered_qsymbols, coeff
 
+include("subspace.jl")
+
 include("slh.jl")
 export SLH, concatenate, feedbackreduce, operators, parameters, promote_name
 

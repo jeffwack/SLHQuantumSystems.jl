@@ -8,7 +8,7 @@ a = Destroy(hilb, :a)
 
 @cnumbers ω κ_L κ_R
 
-cav = SLH(:cav,[:in_L, :in_R],[:out_L, :out_R],[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
+cav = SLH("cav",[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
 
 cavSS = StateSpace(cav)
 
@@ -23,4 +23,4 @@ numcav = substitute(cavSS,paramdict)
 
 numcavquad = toquadrature(numcav)
 
-bode(numcavquad,(:in_L,1),(:out_L,1),collect(logrange(1,10000,100)))
+bode(numcavquad,("in1",1),("out2",1),collect(logrange(1,10000,100)))

@@ -18,19 +18,22 @@ and one output port with direct transmission (S=1).
 """
 function cavity(name)
     #Define the filter cavity 
-    hilb = FockSpace(name)
+    hilb = FockSpace(:cavity)
     a = Destroy(hilb,:a)
 
-    (κ, Δ) = rnumbers(:κ,:Δ)
-
+     (κ,Δ,L) = rnumbers(:κ,:Δ,:L )
+    
     return SLH(name,
-                [:In],
-                [:Out],
+                [OpticalMode("")],
+                Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L])),
+                ["in"],
+                ["out"],
                 [1],
                 [κ*a],
                 Δ*adjoint(a)*a)
 end
 
+#=
 """
     qed_cavity(name)
 
@@ -74,7 +77,7 @@ function qed_cavity(name)
                 L,
                 H)
 end
-
+=#
 
 """
     squeezing_cavity(name)
@@ -101,13 +104,15 @@ function squeezing_cavity(name)
     (κ,ϵ) = rnumbers(:κ,:ϵ)
 
     return SLH(name,
-                [:In],
-                [:Out],
+                [OpticalMode("")],
+                Dict(zip(nameof.([κ,ϵ]),[κ,ϵ])),
+                ["in"],
+                ["out"],
                 [1],
                 [κ*a],
                 1im*ϵ*(adjoint(a)^2- a^2))
 end
-
+#=
 """
     radiation_pressure_cavity(name)
 
@@ -142,3 +147,4 @@ function radiation_pressure_cavity(name)
                 [κ*a],
                 Δ*a'*a+Ω*b'*b - g*a'*a*(b'+b))
 end
+=#

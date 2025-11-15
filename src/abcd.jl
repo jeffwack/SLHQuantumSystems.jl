@@ -110,6 +110,15 @@ function StateSpace(sys::SLH)
                 return error("$term of L is not linear")
             end
             op = first(ops)
+            #=
+            println(SecondQuantizedAlgebra.hilbert(op))
+            println(getfield(op,:name))
+            println(getfield(op,:aon))
+            println(SecondQuantizedAlgebra.hilbert.(x))
+            println(getfield.(x,:name))
+            println(getfield.(x,:aon))
+            println(findall(q->q==op,x))
+            =#
             if op isa SecondQuantizedAlgebra.Destroy
                 k = first(findall(q->q==op,x))
                 phiminus[j,k] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
@@ -309,14 +318,19 @@ function resolvent(A,omegalist)
     return [inv(Matrix{Complex}(1.0im*omega*I - A)) for omega in omegalist]
 end
 
-#for now we will take from and to as integers
-function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from, to)
+function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Int, to::Int)
     A = Matrix{Complex}(sys.A)
     C = Matrix{Complex}(sys.C)
     
     Rlist = resolvent(A,omegalist)
 
     return [C[to,:]'*R[:,from] for R in Rlist]
+end
+
+function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
+    j = stateidx(from)
+    k = first(findall(s->s==to,sys.outputs))
+    return fresponse_state2output(sys, omegalist,j,k)
 end
 
 function fresponse_allIO(sys::StateSpace, omegalist::Vector{Float64})

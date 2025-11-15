@@ -15,15 +15,41 @@ size(H) = ()
 
 The two ways of combining SLH systems are concatenate() and feedbackreduce()
 """
-struct SLH{S,L,H}
-    name::Symbol #should be a symbol
-    inputs::Vector{Symbol} #must have unique elements
-    outputs::Vector{Symbol} #must have unique elements
-    S::S #size nxn
-    L::L #size n
-    H::H #has operators which act on hilbert
+struct SLH
+    name::String 
+    subspaces::Vector{Subspace}
+    parameters #:: #Set{SymbolicUtils.BasicSymbolic}
+    #operators #:: #Set{SecondQuantizedAlgebra.QNumber}
+    inputs::Vector{String} #must have unique elements
+    outputs::Vector{String} #must have unique elements
+    S #size nxn
+    L #size n
+    H #has operators which act on hilbert
 end
 
+function SLH(name,S,L,H)
+    hilb = SecondQuantizedAlgebra.hilbert(sum([sum(L),H]))
+    
+    if hilb isa SecondQuantizedAlgebra.ConcreteHilbertSpace
+        n = 1
+    elseif hilb isa SecondQuantizedAlgebra.ProductSpace
+        n = length(hilb.spaces)
+    end
+
+    subspaces = fill(GenericMode(""),n)
+
+    paramlist = union(get_cnumbers(H),get_cnumbers(sum(L)))
+    params = Dict(zip(nameof.(paramlist),paramlist))
+
+    m = length(L)
+
+    inputs = ["in$j" for j in 1:m]
+    outputs = ["out$j" for j in 1:m]
+
+    return SLH(name,subspaces,parameters,inputs,outputs,S,L,H)
+     
+end
+    
 
 
 """
@@ -43,14 +69,9 @@ returns all the symbolic numbers contained in the system's Hamiltonian and coupl
 function parameters(sys::SLH)
     return union(get_cnumbers(sys.H),get_cnumbers(sum(sys.L)))
 end
+#=
 
-
-function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
-    old_sym = parameter.metadata[Symbolics.VariableSource][2]
-    new_sym = Symbol(topname,:_,old_sym)
-    return rnumber(new_sym)
-end
-
+  #depreciated
 function promote_name(hilb::SecondQuantizedAlgebra.ConcreteHilbertSpace, name)
     names = fieldnames(typeof(hilb))
     fields = [getfield(hilb,name) for name in names] 
@@ -68,7 +89,13 @@ function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
 
     return tensor(new_spaces...)
 end
+=#
 
+function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
+    old_sym = parameter.metadata[Symbolics.VariableSource][2]
+    new_sym = Symbol(topname,"_",old_sym)
+    return rnumber(new_sym)
+end
 
 #This function is for SecondQuantizedAlgebra operators
 function promote_op(operator,aon_offset,new_product_space, topname)
@@ -100,7 +127,7 @@ function promote_op(operator,aon_offset,new_product_space, topname)
     middlefields = [getfield(operator,name) for name in middlefieldnames]
 
     old_op_name = popfirst!(middlefields)
-    new_op_name = Symbol(topname,:_,old_op_name)
+    new_op_name = Symbol(topname,"_",old_op_name)
     
     #println(typeof(operator).name.wrapper)
     #println([new_product_space,new_op_name, middlefields...,subspaceindex])
@@ -121,7 +148,6 @@ SLHSystems are created with a unique name.
 """
 function concatenate(syslist,name)
     old_hilberts = [SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]
-    sys_names = [sys.name for sys in syslist]
     
     #we want to construct a list of aon_offsets, which consists of the number of
     #'atomic' or concrete Hilbert spaces accumulated so far.
@@ -135,17 +161,20 @@ function concatenate(syslist,name)
             error("don't recognize this Hilbert space")
         end
     end
+    
+    hilb_product = tensor(old_hilberts...)
 
-    hilb_product = tensor(promote_name.(old_hilberts,sys_names)...)
+    sys_names = [sys.name for sys in syslist]
+    newsubspaces = vcat([[promotename(subsys,sys.name) for subsys in sys.subspaces] for sys in syslist]...)
     
     #hilb_product = SecondQuantizedAlgebra.tensor([SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]...)
     
     #We 'stack' the inputs and outputs of the systems we are combining.
     #first, we promote the names of inputs and outputs, to prevent naming collisions
-    newinputs = [[Symbol(sys.name,:_,input) for input in sys.inputs] for sys in syslist]
+    newinputs = [[sys.name*"_"*input for input in sys.inputs] for sys in syslist]
     inputs = cat(newinputs...,dims = 1)
 
-    newoutputs = [[Symbol(sys.name,:_,output) for output in sys.outputs] for sys in syslist]
+    newoutputs = [[sys.name*"_"*output for output in sys.outputs] for sys in syslist]
     outputs = cat(newoutputs...,dims = 1)
 
     #next, we concate all the scattering matrices block diagonally
@@ -155,13 +184,14 @@ function concatenate(syslist,name)
     
     #find and promote old operators to new larger Hilbert space
     opinfo = [(collect(operators(sys)),sys.name,offset) for (sys,offset) in zip(syslist,aon_offsets)]
-    #println(oldopsplusname)
+    #println(opinfo)
     newops = [[promote_op(op,offset,hilb_product,name) for op in oplist] for (oplist,name,offset) in opinfo]
+    #println(newops)
     
     oldops = [tup[1] for tup in opinfo]
 
     #promote names of parameters
-    oldparamsplusname = [(collect(parameters(sys)),sys.name) for sys in syslist]
+    oldparamsplusname = [(collect(values(sys.parameters)),sys.name) for sys in syslist]
     
     newparams = [[promote(param,name) for param in paramlist] for (paramlist,name) in oldparamsplusname]
     
@@ -179,7 +209,14 @@ function concatenate(syslist,name)
 
     L = vcat(newLs...)
 
-    return SLH(name,inputs, outputs,S,L,H)
+    paramlist = vcat(newparams...)
+    paramsdict = Dict(zip(nameof.(paramlist),paramlist))
+    #println(newops)
+    oplist = vcat(newops...)
+    #println(oplist)
+    #opsdict = Dict(zip(getfield.(oplist,:name),oplist))
+    
+    return SLH(name,newsubspaces,paramsdict,inputs,outputs,S,L,H)
 end
 
 """
@@ -218,7 +255,8 @@ function feedbackreduce(A,output, input)
 
     Hprime = 1/(2im)*(term1*term2*term3-termA*termB*termC)
 
+    #return (A.H, Hprime)
     H = simplify(A.H + Hprime)
 
-    return SLH(A.name,newinputs,newoutputs,S,L,H)
+    return SLH(A.name,A.subspaces,A.parameters,newinputs,newoutputs,S,L,H)
 end
