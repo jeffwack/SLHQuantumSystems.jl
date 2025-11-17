@@ -398,10 +398,16 @@ function toquadrature(sys::StateSpace)
     oldC = sys.C 
     oldD = sys.D
 
+    n_ports = length(sys.inputs)
+
+    blockpairsIO = [quadratureblocks(sys,GenericMode("")) for ii in 1:n_ports]
+    leftIO = cat([blockpair[1] for blockpair in blockpairsIO]...;dims=(1,2))
+    rightIO = cat([blockpair[2] for blockpair in blockpairsIO]...;dims=(1,2))
+
     newA = simplify.(expand.(left*oldA*right))
-    newB = simplify.(expand.(left*oldB))
-    newC = simplify.(expand.(oldC*right))
-    newD = simplify.(expand.(oldD))
+    newB = simplify.(expand.(left*oldB*rightIO))
+    newC = simplify.(expand.(leftIO*oldC*right))
+    newD = simplify.(expand.(leftIO*oldD*rightIO))
 
     return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD)
 end

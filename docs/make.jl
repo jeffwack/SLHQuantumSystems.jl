@@ -21,9 +21,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Examples" => GENERATED_EXAMPLE_PAGES,
         "Linear quantum networks" => "LinearQuantumNetworks.md",
         "API" => "api.md",
+        "Examples" => GENERATED_EXAMPLE_PAGES,
         "Literate Workflow" => "literate-workflow.md",
     ],
     workdir=joinpath(@__DIR__, ".."),

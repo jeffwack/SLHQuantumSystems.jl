@@ -31,6 +31,16 @@ i [H,\bold{a}(t)] = A\bold{a}(t),
 
 for some matrix A.
 
+To include inputs and outputs we introduce vectors of 'bath modes,' ``\bold{a_{in}}(t)`` and ``\bold{a_{out}}(t)``.
+
+Now, the full equations of motion can be written as
+```math
+\begin{align*}
+\dot{\bold{a}}(t) &= A\bold{a}(t) + B\bold{a_{in}}(t) \\
+\bold{a_{out}}(t) &= C\bold{a}(t) + D\bold{a_{in}}(t)
+\end{align*}
+```
+
 ## Quadrature Operator Basis
 
 ### Optical Modes
@@ -87,11 +97,18 @@ a_m(t) \\
 a^\dagger_m(t)
 \end{bmatrix}
 = T_m \bold{a}(t) .
-
 ```
 
 Where ``T_m = I_m \otimes T`` and we have defined ``T`` to be the single mode
 transformation matrix.
+
+The full equations of motion in the quadrature basis are
+```math
+\begin{align*}
+\dot{\bold{x}}(t) &= A\bold{x}(t) + B\bold{u}(t) \\
+\bold{y}(t) &= C\bold{x}(t) + D\bold{u}(t)
+\end{align*}
+```
 
 ### Mechanical Modes
 The operators ``x`` and ``p`` have different units for mechanical systems compared to optical quadratures, and thus the transformation from annihilation and creation operators

@@ -141,12 +141,12 @@ using Symbolics
         H = ω * a' * a
         L = [√κ * a]
         S = [1]
-        sys = SLH(:test, [:in], [:out], S, L, H)
+        sys = SLH("test", S, L, H)
         
         # Test 1: SLH construction
-        @test sys.name == :test
-        @test sys.inputs == [:in]
-        @test sys.outputs == [:out]
+        @test sys.name == "test"
+        @test sys.inputs == ["in"]
+        @test sys.outputs == ["out"]
         @test sys.S == [1]
         @test length(sys.L) == 1
         
@@ -165,7 +165,7 @@ using Symbolics
     
     @testset "cascade" begin
         # Create two test systems (following the docs quick start pattern)
-        hilb = FockSpace(:cavity)
+        hilb = FockSpace("cavity")
         @qnumbers a::Destroy(hilb)
         @cnumbers ω κ
         
@@ -174,15 +174,15 @@ using Symbolics
         L = [√κ * a]
         S = [1]
 
-        cavityA = SLH(:A, [:in], [:out], S, L, H)
-        cavityB = SLH(:B, [:in], [:out], S, L, H)
+        cavityA = SLH("A", S, L, H)
+        cavityB = SLH("B", S, L, H)
         
         # Test that concatenate runs without error
-        combined = concatenate([cavityA, cavityB],:chain)
+        combined = concatenate([cavityA, cavityB],"chain")
         @test isa(combined, SLH)
         
         # Test that feedbackreduce runs without error
-        cascaded = feedbackreduce(combined, :A_out, :B_in)
+        cascaded = feedbackreduce(combined, "A_out", "B_in")
         @test isa(cascaded, SLH)
     end
 

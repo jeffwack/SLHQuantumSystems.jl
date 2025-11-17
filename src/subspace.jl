@@ -60,8 +60,8 @@ function operatornames(subsys::OpticalMode)
 end
 
 function quadratureblocks(sys, subsys::OpticalMode)
-    left = [0.5 0.5; -0.5im 0.5im]
-    right = [1 im; 1 -im]
+    left = 1/sqrt(2)*[1 1; -im im]
+    right = 1/sqrt(2)*[1 im; 1 -im]
     return (left, right) 
 end
 

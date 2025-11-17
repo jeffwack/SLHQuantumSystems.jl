@@ -42,9 +42,13 @@ function SLH(name,S,L,H)
     params = Dict(zip(nameof.(paramlist),paramlist))
 
     m = length(L)
-
-    inputs = ["in$j" for j in 1:m]
-    outputs = ["out$j" for j in 1:m]
+    if m == 1
+        inputs = ["in"]
+        outputs = ["out"]
+    else
+        inputs = ["in$j" for j in 1:m]
+        outputs = ["out$j" for j in 1:m]
+    end
 
     return SLH(name,subspaces,params,inputs,outputs,S,L,H)
      
