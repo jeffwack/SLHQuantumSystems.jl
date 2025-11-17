@@ -10,8 +10,7 @@ and one output port with direct transmission (S=1).
 - `name`: Symbol identifying the cavity (used for operator and parameter naming)
 
 # Returns
-- `SLH`: System with Hamiltonian H = Δ·a†a and coupling L = [√κ·a]
-
+- `SLH`: System with Hamiltonian H = Δ·a†a and coupling L = [κa]
 # Parameters
 - `κ`: Cavity decay rate
 - `Δ`: Cavity detuning from driving field
@@ -21,11 +20,15 @@ function cavity(name)
     hilb = FockSpace(:cavity)
     a = Destroy(hilb,:a)
 
-     (κ,Δ,L) = rnumbers(:κ,:Δ,:L )
-    
+    mode = OpticalMode("")
+
+    (κ,Δ,L) = rnumbers(parameternames(mode)...)
+
+    paramdict = Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L]))
+      
     return SLH(name,
-                [OpticalMode("")],
-                Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L])),
+                [mode],
+                paramdict,
                 ["in"],
                 ["out"],
                 [1],
@@ -99,12 +102,15 @@ interaction (two-mode squeezing Hamiltonian).
 """
 function squeezing_cavity(name)
     hilb = FockSpace(:squeezer)
+    
+    mode = GenericMode("")
+    
     a = Destroy(hilb, :a)
 
     (κ,ϵ) = rnumbers(:κ,:ϵ)
 
     return SLH(name,
-                [OpticalMode("")],
+                [mode],
                 Dict(zip(nameof.([κ,ϵ]),[κ,ϵ])),
                 ["in"],
                 ["out"],

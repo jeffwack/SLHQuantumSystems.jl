@@ -33,8 +33,6 @@ get_additive_terms
 ```@docs
 cavity
 squeezing_cavity
-radiation_pressure_cavity
-qed_cavity
 ```
 
 ## Function Index

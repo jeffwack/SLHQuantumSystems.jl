@@ -46,7 +46,7 @@ function SLH(name,S,L,H)
     inputs = ["in$j" for j in 1:m]
     outputs = ["out$j" for j in 1:m]
 
-    return SLH(name,subspaces,parameters,inputs,outputs,S,L,H)
+    return SLH(name,subspaces,params,inputs,outputs,S,L,H)
      
 end
     

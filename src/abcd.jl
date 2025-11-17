@@ -1,5 +1,7 @@
 struct StateSpace
     name
+    subspaces
+    parameters
     inputs
     outputs
     A
@@ -157,7 +159,7 @@ function StateSpace(sys::SLH)
     C = Symbolics.simplify.(C)
     D = Symbolics.simplify.(D)
 
-    return StateSpace(sys.name, sys.inputs,sys.outputs, A,B,C,D)
+    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs,sys.outputs, A,B,C,D)
     
 end
 
@@ -310,8 +312,9 @@ function Symbolics.substitute(sys::StateSpace, dict)
     newB = Symbolics.substitute.(sys.B, [dict])
     newC = Symbolics.substitute.(sys.C, [dict])
     newD = Symbolics.substitute.(sys.D, [dict])
-
-    return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
+    params = sys.parameters
+    newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
+    return StateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD)
 end
 
 function resolvent(A,omegalist)
@@ -375,20 +378,31 @@ function toquadrature(M::Matrix)
     left = cat(fill(A,p)...;dims=(1,2))
     right = cat(fill(inv(A),q)...;dims=(1,2))
     
-    return left*M*right
+    return simplify.(expand.(left*M*right))
+end
+
+######## TYPE PIRACY
+function Base.zero(::Type{Any})
+    return 0.0
 end
 
 function toquadrature(sys::StateSpace)
+
+    blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
+
+    left = cat([blockpair[1] for blockpair in blockpairs]...;dims=(1,2))
+    right = cat([blockpair[2] for blockpair in blockpairs]...;dims=(1,2))
+    
     oldA = sys.A
     oldB = sys.B 
     oldC = sys.C 
     oldD = sys.D
 
+    newA = simplify.(expand.(left*oldA*right))
+    newB = simplify.(expand.(left*oldB))
+    newC = simplify.(expand.(oldC*right))
+    newD = simplify.(expand.(oldD))
 
-    newA = toquadrature(oldA)
-    newB = toquadrature(oldB)
-    newC = toquadrature(oldC) 
-    newD = toquadrature(oldD)
-
-    return StateSpace(sys.name, sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD)
 end
+

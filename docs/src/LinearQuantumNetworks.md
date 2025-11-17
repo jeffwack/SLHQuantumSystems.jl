@@ -13,7 +13,7 @@ time evolved creation and annihilation operators for every mode, which we can
 collect into the 'state vector' of the system.
 
 ```math
-\vec{\bold{a}}(t) = 
+\bold{a}(t) = 
 \begin{bmatrix} 
 a_1(t) \\
 a^\dagger_1(t) \\
@@ -21,8 +21,19 @@ a^\dagger_1(t) \\
 a_m(t) \\
 a^\dagger_m(t)
 \end{bmatrix}
-```                                    
+```
+This allows us to write the Heisenberg equations of motion for a linear system in vector form,
 
+```math
+\dot{\bold{a}}(t) =
+i [H,\bold{a}(t)] = A\bold{a}(t),
+```                      
+
+for some matrix A.
+
+## Quadrature Operator Basis
+
+### Optical Modes
 We can also represent the state of the system using quadrature operators,
 defined by the relations:
 
@@ -51,7 +62,7 @@ a \\ a^\dagger
 giving the vector relationship
 
 ```math
-\vec{\bold{x}}(t) = 
+\bold{x}(t) = 
 \begin{bmatrix}
 x_1(t) \\
 p_1(t) \\
@@ -75,12 +86,31 @@ a^\dagger_1(t) \\
 a_m(t) \\
 a^\dagger_m(t)
 \end{bmatrix}
-= T_m \vec{\bold{a}}(t) .
+= T_m \bold{a}(t) .
 
 ```
 
 Where ``T_m = I_m \otimes T`` and we have defined ``T`` to be the single mode
 transformation matrix.
+
+### Mechanical Modes
+The operators ``x`` and ``p`` have different units for mechanical systems compared to optical quadratures, and thus the transformation from annihilation and creation operators
+to quadratures takes a slightly different form.
+
+```math
+\begin{bmatrix}
+x \\ p
+\end{bmatrix}
+=
+\frac{1}{\sqrt{2m\omega}}
+\begin{pmatrix}
+1 & 1 \\
+-i m \omega & i m \omega
+\end{pmatrix}
+\begin{bmatrix}
+a \\ a^\dagger
+\end{bmatrix}
+``` 
 
 ## Named Inputs and Outputs
 
