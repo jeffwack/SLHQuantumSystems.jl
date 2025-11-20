@@ -48,21 +48,22 @@ qss = toquadrature(aass)
 
 #Now we want to substitute numerical values.
 
-paramdict = Dict([ω => 0, l=>1, κ => sqrt(2*2*pi*100),Ω=>0.1,m=> 1000,g=>1000,Γ => 0.001])
+paramdict = Dict([ω => 0, l=>10, κ => 20,Ω=>0.05,m=> 10,g=>100,Γ => 0.001])
 
 numeric = substitute(qss,paramdict)
 
 freq = collect(logrange(0.01,10000,1000))
 
 N = fresponse_allIO(numeric,freq)
-S = fresponse_state2output(numeric, freq, 1,2)
+S = fresponse_state2output(numeric, freq, 2,2)
+
 
 fig = Figure()
 ax = Axis(fig[1,1],xscale=log10, yscale=log10)
-scatter!(ax,freq,abs.(N[2,2]);label="2,2")
-scatter!(ax,freq,abs.(N[2,1]);label="2,1")
-scatter!(ax,freq,abs.(N[2,1]-N[2,2]);label="sum")
-scatter!(ax,freq,abs.(S);label="signal")
+scatter!(ax,freq,abs.(N[2,2]);label="shot noise")
+scatter!(ax,freq,abs.(N[2,1]);label="radiation pressure noise")
+scatter!(ax,freq,abs.(N[2,2]-N[2,1])./abs.(S);label="noise to signal ratio")
+scatter!(ax,freq,abs.(S);label="signal response")
 axislegend(ax)
 fig
 
