@@ -330,6 +330,7 @@ function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, fro
     return [C[to,:]'*R[:,from] for R in Rlist]
 end
 
+#below needs fixed
 function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
     j = stateidx(from)
     k = first(findall(s->s==to,sys.outputs))

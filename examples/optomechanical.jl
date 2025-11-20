@@ -60,10 +60,12 @@ S = fresponse_state2output(numeric, freq, 2,2)
 
 fig = Figure()
 ax = Axis(fig[1,1],xscale=log10, yscale=log10)
+ylims!(ax,10e-3,10e7)
 scatter!(ax,freq,abs.(N[2,2]);label="shot noise")
 scatter!(ax,freq,abs.(N[2,1]);label="radiation pressure noise")
 scatter!(ax,freq,abs.(N[2,2]-N[2,1])./abs.(S);label="noise to signal ratio")
 scatter!(ax,freq,abs.(S);label="signal response")
-axislegend(ax)
+axislegend(ax; position = :rt)
 fig
+# save("optomechanical.png",fig)
 
