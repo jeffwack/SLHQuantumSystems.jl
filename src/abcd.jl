@@ -43,8 +43,9 @@ function StateSpace(sys::SLH)
     # Now we go through every pair of annihilation operators and look for the
     # corresponding terms in the Hamiltonian
     terms = get_additive_terms(H)
+    
     args = [SymbolicUtils.arguments(term) for term in terms]
-    #println(args)
+    #println([typeof.(term) for term in args])
 
     # We want to separate our terms into energy conserving (omegaminus) and non-conserving (omegaplus).
     # The operator ordering of second quantized algebra is only applied to non-commuting operators.
@@ -54,6 +55,7 @@ function StateSpace(sys::SLH)
 
     #organized by term
     for term in args
+        #println(term)
         # first we will check that this term is quadratic in the operators
         if length(filter(q->q isa SecondQuantizedAlgebra.QNumber,term)) != 2
             return error("$term of the Hamiltonian is not quadratic")
@@ -67,8 +69,7 @@ function StateSpace(sys::SLH)
 
             de = first(destroyers)
             k = first(findall(q->q==de,x))
-
-            omegaminus[j,k] = first(filter(arg -> arg isa Num, term))
+            omegaminus[j,k] = first(filter(arg -> arg isa Number || arg isa SymbolicUtils.BasicSymbolic, term)) ##TODO: remove 'or' here and in analogous statements. Where is BasicSymbolic being introduced?
         elseif length(creators) == 2 #&& creators[1] == creators[2]
             cr1 = creators[1]
             j = first(findall(q->q==cr1',x))
@@ -76,7 +77,7 @@ function StateSpace(sys::SLH)
             cr2 = creators[2]
             k = first(findall(q->q==cr2',x))
             
-            coef = first(filter(arg -> arg isa Num, term))
+            coef = first(filter(arg -> arg isa Number || arg isa SymbolicUtils.BasicSymbolic, term))
             omegaplus[j,k] = coef
             omegaplus[k,j] = coef
         elseif length(creators) == 0 #&& destroyers[1] == destroyers[2]
@@ -126,10 +127,10 @@ function StateSpace(sys::SLH)
             =#
             if op isa SecondQuantizedAlgebra.Destroy
                 k = first(findall(q->q==op,x))
-                phiminus[j,k] = first(filter(arg -> arg isa Num, term))
+                phiminus[j,k] = first(filter(arg -> arg isa Number || arg isa SymbolicUtils.BasicSymbolic, term))
             else
                 k = first(findall(q->q==op',x))
-                phiplus[j,k] = first(filter(arg -> arg isa Num,term))
+                phiplus[j,k] = first(filter(arg -> arg isa Number || arg isa SymbolicUtils.BasicSymbolic,term))
             end
         end
     end
@@ -156,11 +157,12 @@ function StateSpace(sys::SLH)
     C = P(n)*C*P(m)'
     D = P(n)*D*P(n)'
 
-    #Symbolic simplification
+    #=#Symbolic simplification
     A = Symbolics.simplify.(A)
     B = Symbolics.simplify.(B)
     C = Symbolics.simplify.(C)
     D = Symbolics.simplify.(D)
+    =#
 
     return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs,sys.outputs, A,B,C,D)
     
@@ -189,6 +191,8 @@ function P(n::Int)
     
     return PP
 end
+
+#=
 """
     slh2abcd(sys::SLH)
 Convert a linear quantum system from SLH representation to ABCD representation.
@@ -230,6 +234,7 @@ function slh2abcd(sys::SLH)
     #return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
 
 end
+=#
 
 ## TODO: implement Combes constructions
 ## make separate types for passive and active linear systems?
@@ -311,10 +316,10 @@ function state_vector(H)
 end
 
 function Symbolics.substitute(sys::StateSpace, dict)
-    newA = Symbolics.substitute.(sys.A, [dict])
-    newB = Symbolics.substitute.(sys.B, [dict])
-    newC = Symbolics.substitute.(sys.C, [dict])
-    newD = Symbolics.substitute.(sys.D, [dict])
+    newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))
+    newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
+    newC = Symbolics.value.(Symbolics.substitute.(sys.C, [dict]))
+    newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
     return StateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD)

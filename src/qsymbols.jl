@@ -105,10 +105,10 @@ function promote_name(parameter, parentname)
     return Symbolics.variable(new_sym)
 end
 
-#Want to dispatch on SymbolicUtils vs Symbolics? Or just do away with below?
+#=#Want to dispatch on SymbolicUtils vs Symbolics? Or just do away with below?
 function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
     old_sym = parameter.metadata[Symbolics.VariableSource][2]
     new_sym = Symbol(topname,"_",old_sym)
     return rnumber(new_sym)
 end
-
+=#

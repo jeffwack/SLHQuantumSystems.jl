@@ -7,4 +7,8 @@ LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 QuantumOptics = "6e0679c1-51ea-5a7c-ac74-d61b76210b0c"
 SLHQuantumSystems = "a0b4ee4f-8fee-4001-b7c2-b2f55611dd49"
 SecondQuantizedAlgebra = "f7aa4685-e143-4cb6-a7f3-073579757907"
+SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+
+[sources]
+SLHQuantumSystems = {path = ".."}
