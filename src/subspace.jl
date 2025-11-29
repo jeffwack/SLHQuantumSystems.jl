@@ -1,6 +1,10 @@
+#= This file defines the Subspace type. This type's role is analogus to that of the ConcreteHilbertSpace in SecondQuantizedAlgebra.jl, and each SLH system
+# has a vector of subspaces which are in one-to-one correspondence with the 'spaces' of a SecondQuantizedAlgebra.ProductSpace. Each Subspace type provides
+# the names of the parameters associated with the corresponding Hilbert space. =#
+
 abstract type Subspace end
 
-function promotename(mode::Subspace,parentname)
+function promote_name(mode::Subspace,parentname)
     newname = parentname*"_"*mode.name
     typeof(mode).name.wrapper(newname)
 end

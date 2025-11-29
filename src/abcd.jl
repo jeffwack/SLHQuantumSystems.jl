@@ -1,3 +1,6 @@
+#= This file defines a type for the representation of linear systems
+=#
+
 struct StateSpace
     name
     subspaces

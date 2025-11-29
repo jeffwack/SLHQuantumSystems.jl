@@ -1,3 +1,5 @@
+#= This file defines the SLH type as well as fundamental functions for combining them =#
+
 """
 SLH(name, inputs, outputs, S, L, H)
 
@@ -27,7 +29,9 @@ struct SLH
     H #has operators which act on hilbert
 end
 
+#This constructor automatically makes all the modes 'generic' and names the inputs and outputs in1, in2,... out1, out2...
 function SLH(name,S,L,H)
+    # We do this because SecondQuantizedAlgebra throws an error if the Hilbert space of H and L is not the same.
     hilb = SecondQuantizedAlgebra.hilbert(sum([sum(L),H]))
     
     if hilb isa SecondQuantizedAlgebra.ConcreteHilbertSpace
@@ -95,6 +99,7 @@ function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
 end
 =#
 
+#marked for depreciation
 function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
     old_sym = parameter.metadata[Symbolics.VariableSource][2]
     new_sym = Symbol(topname,"_",old_sym)
@@ -153,7 +158,30 @@ SLHSystems are created with a unique name.
 function concatenate(syslist,name)
     old_hilberts = [SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]
     
-    #we want to construct a list of aon_offsets, which consists of the number of
+    #The new hilbert space is the tensor product of the old hilbert spaces
+    hilb_product = tensor(old_hilberts...)
+
+    #Now for the subspaces, parameters, operators, inputs, and outputs we will
+    # prepend the name of the system to the original names before combining
+    sys_names = [sys.name for sys in syslist]
+
+    ####
+    # Subspaces
+    newsubspaces = vcat([[promote_name(subsys,sys.name) for subsys in sys.subspaces] for sys in syslist]...)
+    ###
+
+    ###
+    # Parameters
+    oldparams = [collect(values(sys.parameters)) for sys in syslist]
+    newparams = [[promote_name(param,name) for param in paramlist] for (paramlist,name) in zip(oldparams,sys_names)]
+    paramreplacement = [Dict([old=>new for (old,new) in zip(subsys_oldparam,subsys_newparams)]) for (subsys_oldparam,subsys_newparams) in zip(oldparams,newparams)]
+    ###
+
+    ###
+    # Operators
+    oldops = [collect(union(get_qnumbers(sys.H),get_qnumbers(sys.L))) for sys in syslist]
+    
+    #aon_offsets consists of the number of
     #'atomic' or concrete Hilbert spaces accumulated so far.
     aon_offsets = [0]
     for hilb in old_hilberts
@@ -166,13 +194,19 @@ function concatenate(syslist,name)
         end
     end
     
-    hilb_product = tensor(old_hilberts...)
+    newops = [[promote_op(op,offset,hilb_product,name) for op in oplist] for (oplist,name,offset) in zip(oldops,sys_names,aon_offsets)]
+    opreplacement = [Dict([old => new for (old,new) in zip(subsys_oldops,subsys_newops)]) for (subsys_oldops,subsys_newops) in zip(oldops,newops)]
+    ###   
+  
+    rulelist = [merge(paramrules,oprules) for (paramrules,oprules) in zip(paramreplacement,opreplacement)]
+    
+    #we concatenate all the scattering matrices block diagonally
+    S = cat([sys.S for sys in syslist]...;dims=(1,2))
 
-    sys_names = [sys.name for sys in syslist]
-    newsubspaces = vcat([[promotename(subsys,sys.name) for subsys in sys.subspaces] for sys in syslist]...)
-    
-    #hilb_product = SecondQuantizedAlgebra.tensor([SecondQuantizedAlgebra.hilbert(sys.H) for sys in syslist]...)
-    
+    L = vcat([[substitute(collapse,rules) for collapse in sys.L] for (rules,sys) in zip(rulelist,syslist)]...)
+
+    H = sum([substitute(sys.H,rules) for (rules,sys) in zip(rulelist,syslist)])
+
     #We 'stack' the inputs and outputs of the systems we are combining.
     #first, we promote the names of inputs and outputs, to prevent naming collisions
     newinputs = [[sys.name*"_"*input for input in sys.inputs] for sys in syslist]
@@ -180,39 +214,7 @@ function concatenate(syslist,name)
 
     newoutputs = [[sys.name*"_"*output for output in sys.outputs] for sys in syslist]
     outputs = cat(newoutputs...,dims = 1)
-
-    #next, we concate all the scattering matrices block diagonally
-    Slist = [sys.S for sys in syslist]
-    S = cat(Slist...;dims=(1,2))
-
     
-    #find and promote old operators to new larger Hilbert space
-    opinfo = [(collect(operators(sys)),sys.name,offset) for (sys,offset) in zip(syslist,aon_offsets)]
-    #println(opinfo)
-    newops = [[promote_op(op,offset,hilb_product,name) for op in oplist] for (oplist,name,offset) in opinfo]
-    #println(newops)
-    
-    oldops = [tup[1] for tup in opinfo]
-
-    #promote names of parameters
-    oldparamsplusname = [(collect(values(sys.parameters)),sys.name) for sys in syslist]
-    
-    newparams = [[promote(param,name) for param in paramlist] for (paramlist,name) in oldparamsplusname]
-    
-    oldparams = [tup[1] for tup in oldparamsplusname]
-
-    oldsyms = [cat(ops,params,dims=1) for (ops,params) in zip(oldops,oldparams)]
-    newsyms = [cat(ops,params,dims=1) for (ops,params) in zip(newops,newparams)] 
-    
-    rulelist = [Dict([old => new for (old,new) in zip(oldoplist,newoplist)]) for (oldoplist,newoplist) in zip(oldsyms,newsyms)]
-    newHs = [substitute(sys.H,rules) for (rules,sys) in zip(rulelist,syslist)]
-
-    H = sum(newHs)
-
-    newLs = [[substitute(collapse,rules) for collapse in sys.L] for (rules,sys) in zip(rulelist,syslist)]
-
-    L = vcat(newLs...)
-
     paramlist = vcat(newparams...)
     paramsdict = Dict(zip(nameof.(paramlist),paramlist))
     #println(newops)

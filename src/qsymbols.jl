@@ -1,3 +1,6 @@
+#= This file contains utility functions for manipulating symbolic expressions containing qnumbers and cnumbers defined by
+# SecondQuantizedAlgebra.jl and Symbolics.jl =#
+
 """
     get_qnumbers(expr)
 
@@ -19,7 +22,7 @@ function get_qnumbers(expr)
 end
 
 """
-    get_numsymbols(expr)
+    get_cnumbers(expr)
 
 Extract all symbolic parameters from an expression.
 
@@ -96,4 +99,9 @@ function islinear(expr)
     return true
 end
 
+function promote_name(parameter, parentname)
+    old_sym = nameof(parameter)
+    new_sym = Symbol(parentname,"_",old_sym)
+    return Symbolics.variable(new_sym)
+end
 

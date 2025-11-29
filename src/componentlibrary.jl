@@ -22,7 +22,7 @@ function cavity(name)
 
     mode = OpticalMode("")
 
-    (κ,Δ,L) = rnumbers(parameternames(mode)...)
+    @variables κ Δ L  
 
     paramdict = Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L]))
       
