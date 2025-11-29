@@ -30,10 +30,10 @@ subspaces = [OpticalMode(""),MechanicalMode("")]
 a = Destroy(hilb,operatornames(subspaces[1])[1],1)
 b = Destroy(hilb,operatornames(subspaces[2])[1],2)
 
-(ω,l,κ) = rnumbers(parameternames(subspaces[1])...)
-(Ω,m,Γ) = rnumbers(parameternames(subspaces[2])...)
+@variables ω l κ #consider replacing calls to parameternames
+@variables Ω m Γ 
 
-g = rnumbers(:g)[1]#coupling parameter is defined separately 
+@variables g #coupling parameter is defined separately 
 
 #Hamiltonian (Chen 2013 eq 2.4)
 H = Ω*b'*b - g*(b'+b)*(a' + a)

@@ -107,7 +107,7 @@ function squeezing_cavity(name)
     
     a = Destroy(hilb, :a)
 
-    (κ,ϵ) = rnumbers(:κ,:ϵ)
+    @variables κ ϵ
 
     return SLH(name,
                 [mode],

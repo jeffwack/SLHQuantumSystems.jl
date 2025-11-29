@@ -58,54 +58,6 @@ function SLH(name,S,L,H)
      
 end
     
-
-
-"""
-operators(sys)
-
-returns all the quantum operators contained in the system's Hamiltonian.
-"""
-function operators(sys)
-    return get_qnumbers(sys.H)
-end
-
-"""
-parameters(sys)
-
-returns all the symbolic numbers contained in the system's Hamiltonian and coupling vector L.
-"""
-function parameters(sys::SLH)
-    return union(get_cnumbers(sys.H),get_cnumbers(sum(sys.L)))
-end
-#=
-
-  #depreciated
-function promote_name(hilb::SecondQuantizedAlgebra.ConcreteHilbertSpace, name)
-    names = fieldnames(typeof(hilb))
-    fields = [getfield(hilb,name) for name in names] 
-    oldname = popfirst!(fields)
-    newname = Symbol(name,:_,oldname)
-    pushfirst!(fields,newname)
-    return typeof(hilb).name.wrapper(fields...)
-end
-
-function promote_name(hilb::SecondQuantizedAlgebra.ProductSpace, name)
-    #We want to create a new hilbert space where the names of all the subspaces 
-    #has name prepended to it. 
-    
-    new_spaces = promote_name.(hilb.spaces, [name])
-
-    return tensor(new_spaces...)
-end
-=#
-
-#marked for depreciation
-function promote(parameter::SymbolicUtils.BasicSymbolic, topname)
-    old_sym = parameter.metadata[Symbolics.VariableSource][2]
-    new_sym = Symbol(topname,"_",old_sym)
-    return rnumber(new_sym)
-end
-
 #This function is for SecondQuantizedAlgebra operators
 function promote_op(operator,aon_offset,new_product_space, topname)
 

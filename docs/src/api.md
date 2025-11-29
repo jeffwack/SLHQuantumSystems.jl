@@ -11,13 +11,6 @@ SLH
 ```@docs
 concatenate
 feedbackreduce
-operators
-parameters
-```
-
-## Conversion
-```@docs
-slh2abcd
 ```
 
 ## Symbolic Utilities

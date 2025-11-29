@@ -6,7 +6,7 @@ using GLMakie
 hilb = FockSpace(:cav)
 a = Destroy(hilb, :a)
 
-@cnumbers ω κ_L κ_R
+@variables ω κ_L κ_R
 
 cav = SLH("cav",[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
 

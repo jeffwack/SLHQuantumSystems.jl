@@ -6,13 +6,13 @@ using LinearAlgebra
 using Symbolics
 
 include("qsymbols.jl")
-export get_qnumbers, get_cnumbers, get_additive_terms, islinear, ordered_qsymbols, coeff
+export get_qnumbers, get_cnumbers, get_additive_terms, islinear, ordered_qsymbols, coeff, promote_name
 
 include("subspace.jl")
 export parameternames, operatornames, quadratureblocks, OpticalMode, MechanicalMode, GenericMode
 
 include("slh.jl")
-export SLH, concatenate, feedbackreduce, operators, parameters, promote_name
+export SLH, concatenate, feedbackreduce
 
 import Symbolics.substitute
 include("abcd.jl")

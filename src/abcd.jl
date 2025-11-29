@@ -68,7 +68,7 @@ function StateSpace(sys::SLH)
             de = first(destroyers)
             k = first(findall(q->q==de,x))
 
-            omegaminus[j,k] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+            omegaminus[j,k] = first(filter(arg -> arg isa Num, term))
         elseif length(creators) == 2 #&& creators[1] == creators[2]
             cr1 = creators[1]
             j = first(findall(q->q==cr1',x))
@@ -76,7 +76,7 @@ function StateSpace(sys::SLH)
             cr2 = creators[2]
             k = first(findall(q->q==cr2',x))
             
-            coef = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+            coef = first(filter(arg -> arg isa Num, term))
             omegaplus[j,k] = coef
             omegaplus[k,j] = coef
         elseif length(creators) == 0 #&& destroyers[1] == destroyers[2]
@@ -126,10 +126,10 @@ function StateSpace(sys::SLH)
             =#
             if op isa SecondQuantizedAlgebra.Destroy
                 k = first(findall(q->q==op,x))
-                phiminus[j,k] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic, term))
+                phiminus[j,k] = first(filter(arg -> arg isa Num, term))
             else
                 k = first(findall(q->q==op',x))
-                phiplus[j,k] = first(filter(arg -> arg isa SymbolicUtils.BasicSymbolic,term))
+                phiplus[j,k] = first(filter(arg -> arg isa Num,term))
             end
         end
     end
