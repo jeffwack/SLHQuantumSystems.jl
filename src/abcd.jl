@@ -390,11 +390,6 @@ function toquadrature(M::Matrix)
     return simplify.(expand.(left*M*right))
 end
 
-######## TYPE PIRACY
-function Base.zero(::Type{Any})
-    return 0.0
-end
-
 function toquadrature(sys::StateSpace)
 
     blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
