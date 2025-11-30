@@ -4,6 +4,7 @@ using SecondQuantizedAlgebra
 using SymbolicUtils
 using LinearAlgebra
 using Symbolics
+import Symbolics.substitute #defined for StateSpace in abcd.jl
 
 include("qsymbols.jl")
 export get_qnumbers, get_cnumbers, get_additive_terms, islinear, ordered_qsymbols, coeff, promote_name
@@ -14,12 +15,14 @@ export parameternames, operatornames, quadratureblocks, OpticalMode, MechanicalM
 include("slh.jl")
 export SLH, concatenate, feedbackreduce
 
-import Symbolics.substitute
 include("abcd.jl")
-export state_vector, makedriftA, makeinputB, eqsofmotion, slh2abcd, fresponse_allIO, fresponse_state2output, toquadrature, symbfresponse, StateSpace
+export state_vector, eqsofmotion,  toquadrature, StateSpace
+
+include("fresponse.jl")
+export response_allIO, fresponse_state2output, symbfresponse
 
 include("componentlibrary.jl")
-export cavity, squeezing_cavity, radiation_pressure_cavity, qed_cavity
+export cavity, squeezing_cavity
 
 ## Handle extensions
 extension_fns = [

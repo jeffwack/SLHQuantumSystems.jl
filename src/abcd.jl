@@ -13,6 +13,7 @@ struct StateSpace
     D
 end
 
+#This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
 function StateSpace(sys::SLH)
 
     S = sys.S
@@ -192,50 +193,6 @@ function P(n::Int)
     return PP
 end
 
-#=
-"""
-    slh2abcd(sys::SLH)
-Convert a linear quantum system from SLH representation to ABCD representation.
-
-The name of the new system, as well as the names of its imputs and outputs will be directly inherited from the input system.
-"""
-function slh2abcd(sys::SLH)
-    hilb = SecondQuantizedAlgebra.hilbert(sys.H)
-    if hilb isa SecondQuantizedAlgebra.ProductSpace    
-        for subspace in hilb.spaces
-            if !(subspace isa FockSpace || subspace isa PhaseSpace)
-                return error("Hilbert space contains non-bosonic modes")
-            end
-        end
-    else
-        if !(hilb isa FockSpace || hilb isa PhaseSpace)
-            return error("Hilbert space contains non-bosonic modes")
-        end
-    end
-
-    S = sys.S
-    L = sys.L
-    H = sys.H
-
-    N = 2*length(L)
-
-    if !islinear(H)
-        return error("Hamiltonian contains non-quadratic terms")
-    end
-    
-    x = state_vector(H)
-
-    eqs = eqsofmotion(H,L,x)
-    terms = get_additive_terms.(eqs)
-    args = [SymbolicUtils.arguments.(term) for term in terms]
-
-    return error("not implemented")
-    
-    #return StateSpace(sys.name,sys.inputs,sys.outputs,A,B,C,D)
-
-end
-=#
-
 function dampterms(L,a)
     return sum([0.5*(Li'*commutator(a,Li) - commutator(a,Li')*Li) for Li in L])
 end
@@ -246,6 +203,7 @@ function eqsofmotion(H,L,x)
 end
 
 #Depreciate?
+# Calculates the A matrix by calculating the equations of motion and placing coefficients term by term.
 #=
 function makedriftA(H,L,x)
     eqs = eqsofmotion(H,L,x)
@@ -267,21 +225,6 @@ function makedriftA(H,L,x)
     end
 
     return A
-end
-
-function makeinputB(L,x)
-    N = 2*length(L)
-    M = length(x)
-    B = Array{Any}(zeros(M,N))
-    
-    for (ii, a) in enumerate(x)
-        for (jj, c) in enumerate(L)
-            B[ii,2*jj-1] = simplify(-1*commutator(a,c'))
-            B[ii,2*jj] = simplify(commutator(a,c))
-        end
-    end
-
-    return B
 end
 =#
 
@@ -315,71 +258,6 @@ function Symbolics.substitute(sys::StateSpace, dict)
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
     return StateSpace(sys.name, sys.subspaces, newparams,sys.inputs, sys.outputs, newA, newB, newC, newD)
-end
-
-function resolvent(A,omegalist)
-    return [inv(Matrix{Complex}(1.0im*omega*I - A)) for omega in omegalist]
-end
-
-function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Int, to::Int)
-    A = Matrix{Complex}(sys.A)
-    C = Matrix{Complex}(sys.C)
-    
-    Rlist = resolvent(A,omegalist)
-
-    return [C[to,:]'*R[:,from] for R in Rlist]
-end
-
-#below needs fixed
-function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
-    j = stateidx(from)
-    k = first(findall(s->s==to,sys.outputs))
-    return fresponse_state2output(sys, omegalist,j,k)
-end
-
-function fresponse_allIO(sys::StateSpace, omegalist::Vector{Float64})
-
-    A = Matrix{Complex}(sys.A)
-    B = Matrix{Complex}(sys.B)
-    C = Matrix{Complex}(sys.C)
-    D = Matrix{Complex}(sys.D)
-    
-    Rlist = resolvent(A,omegalist)
-
-    matrices = [C*R*B + D for R in Rlist]
-    P = matrices[1]
-    matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
-    return matrixoflists
-end
-
-function symbfresponse(sys::StateSpace)
-
-    @variables s
-    iden = Matrix{Int}(I, size(sys.A)...)
-    G =  inv(s*iden - sys.A)
-    return simplify.(sys.C*G*sys.B + sys.D)
-end
-
-function toquadrature(M::Matrix)
-    #the size of the matrix must be even in both dimensions
-    (m,n) = size(M)
-    if mod(m,2) == 0
-        p = Int(m/2)
-    else
-        error("the size of the matrix must be even in both dimensions")
-    end
-    if mod(n,2) == 0
-        q = Int(n/2)
-    else
-        error("the size of the matrix must be even in both dimensions")
-    end
-    
-    A = 1/sqrt(2)*[1 1; -im im]
-    
-    left = cat(fill(A,p)...;dims=(1,2))
-    right = cat(fill(inv(A),q)...;dims=(1,2))
-    
-    return simplify.(expand.(left*M*right))
 end
 
 function toquadrature(sys::StateSpace)
