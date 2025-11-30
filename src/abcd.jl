@@ -236,18 +236,6 @@ function slh2abcd(sys::SLH)
 end
 =#
 
-## TODO: implement Combes constructions
-## make separate types for passive and active linear systems?
-function makephi(H,x)
-    terms = get_additive_terms.(H)
-    phi = Array{Any}(zeros(N, N))
-    for term in terms
-        args = SymbolicUtils.arguments(term)
-
-    end
-end
-
-
 function dampterms(L,a)
     return sum([0.5*(Li'*commutator(a,Li) - commutator(a,Li')*Li) for Li in L])
 end
@@ -257,6 +245,8 @@ function eqsofmotion(H,L,x)
     return eqs
 end
 
+#Depreciate?
+#=
 function makedriftA(H,L,x)
     eqs = eqsofmotion(H,L,x)
     terms = get_additive_terms.(eqs)
@@ -293,6 +283,7 @@ function makeinputB(L,x)
 
     return B
 end
+=#
 
 function stateidx(op)
     if op isa Destroy || op isa Position
@@ -315,6 +306,7 @@ function state_vector(H)
     return x
 end
 
+#Does not substitute operators
 function Symbolics.substitute(sys::StateSpace, dict)
     newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))
     newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
@@ -322,7 +314,7 @@ function Symbolics.substitute(sys::StateSpace, dict)
     newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
-    return StateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return StateSpace(sys.name, sys.subspaces, newparams,sys.inputs, sys.outputs, newA, newB, newC, newD)
 end
 
 function resolvent(A,omegalist)

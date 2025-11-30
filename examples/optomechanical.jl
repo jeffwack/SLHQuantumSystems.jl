@@ -42,7 +42,10 @@ S = [1 0; 0 1]
 
 params = [ω,l,κ,Ω,m,Γ,g]
 pdict = Dict(zip(nameof.(params),params))
-slh = SLH("opto",subspaces,pdict,["l_in","m_in"],["l_out","m_out"], S, L, H)
+
+opdict = Dict(zip(getfield.([a,b],:name),[a,b]))
+
+slh = SLH("opto",subspaces,pdict,opdict,["l_in","m_in"],["l_out","m_out"], S, L, H)
 aass = StateSpace(slh)
 qss = toquadrature(aass)
 

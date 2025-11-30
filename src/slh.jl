@@ -21,7 +21,7 @@ struct SLH
     name::String 
     subspaces::Vector{Subspace}
     parameters #:: #Set{SymbolicUtils.BasicSymbolic}
-    #operators #:: #Set{SecondQuantizedAlgebra.QNumber}
+    operators #:: #Set{SecondQuantizedAlgebra.QNumber}
     inputs::Vector{String} #must have unique elements
     outputs::Vector{String} #must have unique elements
     S #size nxn
@@ -45,6 +45,9 @@ function SLH(name,S,L,H)
     paramlist = union(get_cnumbers(H),get_cnumbers(sum(L)))
     params = Dict(zip(nameof.(paramlist),paramlist))
 
+    oplist = union(get_qnumbers(H),get_qnumbers(sum(L)))
+    ops = Dict(zip(getfield.(oplist,:name),oplist))
+
     m = length(L)
     if m == 1
         inputs = ["in"]
@@ -54,30 +57,12 @@ function SLH(name,S,L,H)
         outputs = ["out$j" for j in 1:m]
     end
 
-    return SLH(name,subspaces,params,inputs,outputs,S,L,H)
+    return SLH(name,subspaces,params,ops,inputs,outputs,S,L,H)
      
 end
     
-#This function is for SecondQuantizedAlgebra operators
+#This function is for SecondQuantizedAlgebra operators. It is intended to be general enough to work on 'any' operator
 function promote_op(operator,aon_offset,new_product_space, topname)
-
-    #old method of finding the subspace within the new product space which fails
-    #when old hilbert spaces are identical
-    #we identify the hilbert space which our operator acts on, which should be a subspace of the product space
-    #=
-    if hasproperty(operator.hilbert,:spaces) #then it is a product space
-        subspace = operator.hilbert.spaces[operator.aon]
-    else #it is not a product space
-        subspace = operator.hilbert
-    end
-
-    #this identifies the operator's hilbert space as a subspace of the product space
-    subspaceindex = findfirst(isequal(subspace),old_product_space.spaces)
-
-    if isnothing(subspaceindex)
-        error("$operator does not act on a subspace of $product_space")
-    end
-    =#
 
     subspaceindex = aon_offset + operator.aon
 
@@ -90,9 +75,6 @@ function promote_op(operator,aon_offset,new_product_space, topname)
     old_op_name = popfirst!(middlefields)
     new_op_name = Symbol(topname,"_",old_op_name)
     
-    #println(typeof(operator).name.wrapper)
-    #println([new_product_space,new_op_name, middlefields...,subspaceindex])
-
     #this calls the operator constructor with the old 'middle data' but on the larger hilbert space
     return typeof(operator).name.wrapper(new_product_space,new_op_name, middlefields...,subspaceindex)
 end
@@ -172,9 +154,9 @@ function concatenate(syslist,name)
     #println(newops)
     oplist = vcat(newops...)
     #println(oplist)
-    #opsdict = Dict(zip(getfield.(oplist,:name),oplist))
+    opsdict = Dict(zip(getfield.(oplist,:name),oplist))
     
-    return SLH(name,newsubspaces,paramsdict,inputs,outputs,S,L,H)
+    return SLH(name,newsubspaces,paramsdict,opsdict,inputs,outputs,S,L,H)
 end
 
 """
@@ -216,5 +198,5 @@ function feedbackreduce(A,output, input)
     #return (A.H, Hprime)
     H = simplify(A.H + Hprime)
 
-    return SLH(A.name,A.subspaces,A.parameters,newinputs,newoutputs,S,L,H)
+    return SLH(A.name,A.subspaces,A.parameters,A.operators,newinputs,newoutputs,S,L,H)
 end

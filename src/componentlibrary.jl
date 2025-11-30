@@ -25,10 +25,12 @@ function cavity(name)
     @variables κ Δ L  
 
     paramdict = Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L]))
+    opdict = Dict(zip(getfield.([a],:name),[a]))
       
     return SLH(name,
                 [mode],
                 paramdict,
+                opdict,
                 ["in"],
                 ["out"],
                 [1],
@@ -94,7 +96,7 @@ interaction (two-mode squeezing Hamiltonian).
 - `name`: Symbol identifying the cavity (used for operator and parameter naming)
 
 # Returns  
-- `SLH`: System with squeezing Hamiltonian H = iϵ(a†² - a²) and coupling L = [√κ·a]
+- `SLH`: System with squeezing Hamiltonian H = iϵ(a†² - a²) and coupling L = [κ·a]
 
 # Parameters
 - `κ`: Cavity decay rate
@@ -108,10 +110,13 @@ function squeezing_cavity(name)
     a = Destroy(hilb, :a)
 
     @variables κ ϵ
+    
+    opdict = Dict(zip(getfield.([a],:name),[a]))
 
     return SLH(name,
                 [mode],
                 Dict(zip(nameof.([κ,ϵ]),[κ,ϵ])),
+                opdict,
                 ["in"],
                 ["out"],
                 [1],

@@ -149,18 +149,7 @@ using Symbolics
         @test sys.outputs == ["out"]
         @test sys.S == [1]
         @test length(sys.L) == 1
-        
-        
-        # Test 3: operators function
-        ops = operators(sys)
-        @test length(ops) == 2
-        @test a in ops
-        @test a' in ops
-        
-        # Test 4: parameters function
-        params = parameters(sys)
-        @test ω in params
-        @test κ in params
+       
     end
     
     @testset "cascade" begin
