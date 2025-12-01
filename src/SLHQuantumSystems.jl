@@ -16,10 +16,10 @@ include("slh.jl")
 export SLH, concatenate, feedbackreduce
 
 include("abcd.jl")
-export state_vector, eqsofmotion,  toquadrature, StateSpace
+export state_vector, eqsofmotion, toquadrature, StateSpace
 
 include("fresponse.jl")
-export response_allIO, fresponse_state2output, symbfresponse
+export fresponse_allIO, fresponse_state2output, symbfresponse
 
 include("componentlibrary.jl")
 export cavity, squeezing_cavity
