@@ -55,7 +55,7 @@ paramdict = Dict([ω => 0, l=>10, κ => 20,Ω=>0.05,m=> 10,g=>100,Γ => 0.001])
 
 numeric = substitute(qss,paramdict)
 
-freq = collect(logrange(0.01,10000,1000))
+freq = collect(logrange(0.1,100000,1000))
 
 N = fresponse_allIO(numeric,freq)
 S = fresponse_state2output(numeric, freq, 2,2)
