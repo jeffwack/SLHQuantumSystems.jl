@@ -2,6 +2,7 @@
 =#
 
 using ControlSystems: AbstractStateSpace, Continuous
+import ControlSystems: system_name, input_names, output_names
 
 struct QuantumStateSpace{TE} <: AbstractStateSpace{TE}
     # SLH metadata
@@ -18,6 +19,10 @@ struct QuantumStateSpace{TE} <: AbstractStateSpace{TE}
     # Required by AbstractStateSpace interface
     timeevol    :: TE
 end
+
+system_name(sys::QuantumStateSpace)  = sys.name
+input_names(sys::QuantumStateSpace)  = sys.inputs
+output_names(sys::QuantumStateSpace) = sys.outputs
 
 #This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
 function QuantumStateSpace(sys::SLH)
