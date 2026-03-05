@@ -10,7 +10,7 @@ a = Destroy(hilb, :a)
 
 cav = SLH("cav",[1 0; 0 1],[√κ_L*a, √κ_R*a],ω*a'*a)
 
-cavSS = StateSpace(cav)
+cavSS = QuantumStateSpace(cav)
 
 quadcavSS = toquadrature(cavSS)
 

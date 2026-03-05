@@ -1,20 +1,26 @@
 #= This file defines a type for the representation of linear systems
 =#
 
-struct StateSpace
-    name
-    subspaces
-    parameters
-    inputs
-    outputs
+using ControlSystems: AbstractStateSpace, Continuous
+
+struct QuantumStateSpace{TE} <: AbstractStateSpace{TE}
+    # SLH metadata
+    name        :: String
+    subspaces   :: Vector
+    parameters  :: Any
+    inputs      :: Vector{String}
+    outputs     :: Vector{String}
+    # ABCD matrices (Any-typed to support both Num and numeric)
     A
     B
     C
     D
+    # Required by AbstractStateSpace interface
+    timeevol    :: TE
 end
 
 #This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
-function StateSpace(sys::SLH)
+function QuantumStateSpace(sys::SLH)
 
     S = sys.S
     L = sys.L
@@ -165,7 +171,7 @@ function StateSpace(sys::SLH)
     D = Symbolics.simplify.(D)
     =#
 
-    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs,sys.outputs, A,B,C,D)
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, A, B, C, D, Continuous())
     
 end
 
@@ -250,17 +256,17 @@ function state_vector(H)
 end
 
 #Does not substitute operators
-function Symbolics.substitute(sys::StateSpace, dict)
+function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))
     newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
     newC = Symbolics.value.(Symbolics.substitute.(sys.C, [dict]))
     newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
-    return StateSpace(sys.name, sys.subspaces, newparams,sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return QuantumStateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol)
 end
 
-function toquadrature(sys::StateSpace)
+function toquadrature(sys::QuantumStateSpace)
 
     blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
 
@@ -283,6 +289,6 @@ function toquadrature(sys::StateSpace)
     newC = simplify.(expand.(leftIO*oldC*right))
     newD = simplify.(expand.(leftIO*oldD*rightIO))
 
-    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol)
 end
 

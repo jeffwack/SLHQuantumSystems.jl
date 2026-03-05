@@ -6,7 +6,7 @@ function resolvent(A,omegalist)
     return [inv(Matrix{Complex}(1.0im*omega*I - A)) for omega in omegalist]
 end
 
-function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Int, to::Int)
+function fresponse_state2output(sys::QuantumStateSpace, omegalist::Vector{Float64}, from::Int, to::Int)
     A = Matrix{Complex}(sys.A)
     C = Matrix{Complex}(sys.C)
     
@@ -16,13 +16,13 @@ function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, fro
 end
 
 #below needs fixed
-function fresponse_state2output(sys::StateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
+function fresponse_state2output(sys::QuantumStateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
     j = stateidx(from)
     k = first(findall(s->s==to,sys.outputs))
     return fresponse_state2output(sys, omegalist,j,k)
 end
 
-function fresponse_allIO(sys::StateSpace, omegalist::Vector{Float64})
+function fresponse_allIO(sys::QuantumStateSpace, omegalist::Vector{Float64})
 
     A = Matrix{Complex}(sys.A)
     B = Matrix{Complex}(sys.B)
@@ -37,7 +37,7 @@ function fresponse_allIO(sys::StateSpace, omegalist::Vector{Float64})
     return matrixoflists
 end
 
-function symbfresponse(sys::StateSpace)
+function symbfresponse(sys::QuantumStateSpace)
 
     @variables s
     iden = Matrix{Int}(I, size(sys.A)...)

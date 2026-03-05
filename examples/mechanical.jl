@@ -12,5 +12,5 @@ opdict = Dict(getfield(b,:name)=>b)
 
 slh = SLH("mass",[mode],paramdict,opdict,["in"],["out"],[1],[Γ*b],Ω*b'*b)
 
-ss = StateSpace(slh)
+ss = QuantumStateSpace(slh)
 qss = toquadrature(ss)

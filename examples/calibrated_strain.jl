@@ -66,7 +66,7 @@ pdict = Dict(zip(nameof.(params),params))
 opdict = Dict(zip(getfield.([a,b],:name),[a,b]))
 
 slh = SLH("opto",subspaces,pdict,opdict,["l_in","m_in"],["l_out","m_out"], S, L, H)
-aass = StateSpace(slh)
+aass = QuantumStateSpace(slh)
 qss = toquadrature(aass)
 
 # ============================================================================
