@@ -1,47 +1,47 @@
 #=
-This file provides methods for evaluating the frequency domain response of a linear system by numerically calculating the Laplace transform
+This file provides methods for evaluating the frequency domain response of a linear system.
+
+For the full input-to-output transfer matrix G(ω), use ControlSystems.jl's `freqresp(sys, ωs)`
+directly — it works for QuantumStateSpace via the `ssdata` implementation in abcd.jl.
+
+`fresponse_state2output` handles the quantum-specific case of state-to-output transfer:
+the response C(iω - A)⁻¹eⱼ from a unit excitation on state quadrature j to output quadrature k.
+This has no ControlSystems.jl equivalent (state excitations are not inputs). It is implemented
+by constructing a dummy system with B = eⱼ and D = 0 and delegating to `freqresp`.
 =#
 
-function resolvent(A,omegalist)
-    return [inv(Matrix{Complex}(1.0im*omega*I - A)) for omega in omegalist]
-end
+using ControlSystems: freqresp
 
-function fresponse_state2output(sys::QuantumStateSpace, omegalist::Vector{Float64}, from::Int, to::Int)
-    A = Matrix{Complex}(sys.A)
-    C = Matrix{Complex}(sys.C)
-    
-    Rlist = resolvent(A,omegalist)
+"""
+    fresponse_state2output(sys::QuantumStateSpace, freqs, from::Int, to::Int) → Vector{ComplexF64}
 
-    return [C[to,:]'*R[:,from] for R in Rlist]
-end
+Transfer from state quadrature index `from` to output quadrature index `to` over `freqs` [rad/s].
 
-#below needs fixed
-function fresponse_state2output(sys::QuantumStateSpace, omegalist::Vector{Float64}, from::Symbol, to::Symbol)
-    j = stateidx(from)
-    k = first(findall(s->s==to,sys.outputs))
-    return fresponse_state2output(sys, omegalist,j,k)
-end
+Computes C[to,:] * (iω·I - A)⁻¹ * eₓ for each ω, where eₓ is a unit vector selecting
+state `from`. For QuadratureBasis systems, states are ordered (x₁, p₁, x₂, p₂, …).
 
-function fresponse_allIO(sys::QuantumStateSpace, omegalist::Vector{Float64})
-
-    A = Matrix{Complex}(sys.A)
-    B = Matrix{Complex}(sys.B)
-    C = Matrix{Complex}(sys.C)
-    D = Matrix{Complex}(sys.D)
-    
-    Rlist = resolvent(A,omegalist)
-
-    matrices = [C*R*B + D for R in Rlist]
-    P = matrices[1]
-    matrixoflists = [[M[i,j] for M in matrices] for i in 1:size(P,1), j in 1:size(P,2)] 
-    return matrixoflists
+Implemented by passing a dummy system with B = eₓ, D = 0 to `freqresp`, so it inherits
+all of ControlSystems.jl's numerics (Hessenberg form, etc.) rather than using a naive
+matrix inverse.
+"""
+function fresponse_state2output(sys::QuantumStateSpace, freqs::AbstractVector{<:Real},
+                                from::Int, to::Int)
+    n = nstates(sys)
+    B_pick = zeros(ComplexF64, n, 1)
+    B_pick[from, 1] = 1
+    D_zero = zeros(ComplexF64, noutputs(sys), 1)
+    dummy = QuantumStateSpace(sys.name, sys.subspaces, sys.parameters,
+                              ["state_$from"], sys.outputs,
+                              sys.A, B_pick, sys.C, D_zero,
+                              sys.timeevol, sys.basis)
+    G = freqresp(dummy, freqs)   # (nout, 1, nω)
+    return G[to, 1, :]
 end
 
 function symbfresponse(sys::QuantumStateSpace)
-
     @variables s
     iden = Matrix{Int}(I, size(sys.A)...)
-    G =  inv(s*iden - sys.A)
+    G = inv(s*iden - sys.A)
     return simplify.(sys.C*G*sys.B + sys.D)
 end
 

@@ -2,9 +2,26 @@
 =#
 
 using ControlSystems: AbstractStateSpace, Continuous
-import ControlSystems: system_name, input_names, output_names
+import ControlSystems: system_name, input_names, output_names,
+                       ssdata, nstates, ninputs, noutputs, series, feedback
 
-struct QuantumStateSpace{TE} <: AbstractStateSpace{TE}
+abstract type BasisType end
+
+"""
+Ladder (creation/annihilation) operator basis.
+State vector ordered as (a₁, a₁†, a₂, a₂†, ...) after interlacing.
+ABCD matrices are complex-valued.
+"""
+struct LadderBasis <: BasisType end
+
+"""
+Quadrature (amplitude/phase) operator basis.
+State vector ordered as (x₁, p₁, x₂, p₂, ...).
+ABCD matrices are real-valued for physical systems.
+"""
+struct QuadratureBasis <: BasisType end
+
+struct QuantumStateSpace{TE, TB<:BasisType} <: AbstractStateSpace{TE}
     # SLH metadata
     name        :: String
     subspaces   :: Vector
@@ -18,14 +35,47 @@ struct QuantumStateSpace{TE} <: AbstractStateSpace{TE}
     D
     # Required by AbstractStateSpace interface
     timeevol    :: TE
+    basis       :: TB
 end
 
 system_name(sys::QuantumStateSpace)  = sys.name
 input_names(sys::QuantumStateSpace)  = sys.inputs
 output_names(sys::QuantumStateSpace) = sys.outputs
 
-#This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
+# ── ControlSystems.jl interface ───────────────────────────────────────────────
+
+ssdata(sys::QuantumStateSpace)   = (sys.A, sys.B, sys.C, sys.D)
+nstates(sys::QuantumStateSpace)  = size(sys.A, 1)
+ninputs(sys::QuantumStateSpace)  = size(sys.B, 2)
+noutputs(sys::QuantumStateSpace) = size(sys.C, 1)
+
+const _COMPOSE_ERROR = """
+    series and feedback are not defined for QuantumStateSpace.
+    Open quantum systems have a richer composition algebra than classical state-space:
+    the Hamiltonian acquires correction terms when loops are closed (Combes eq. 61).
+    Build composite systems at the SLH level using `concatenate` and `feedbackreduce`,
+    then convert the completed model to QuantumStateSpace.
+    """
+
+series(::QuantumStateSpace, ::QuantumStateSpace)   = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace)                      = error(_COMPOSE_ERROR)
+
+# Default: build in ladder basis then convert to quadrature
 function QuantumStateSpace(sys::SLH)
+    return toquadrature(_build_ladder_ss(sys))
+end
+
+function QuantumStateSpace(sys::SLH, ::LadderBasis)
+    return _build_ladder_ss(sys)
+end
+
+function QuantumStateSpace(sys::SLH, ::QuadratureBasis)
+    return QuantumStateSpace(sys)
+end
+
+#This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
+function _build_ladder_ss(sys::SLH)
 
     S = sys.S
     L = sys.L
@@ -176,8 +226,8 @@ function QuantumStateSpace(sys::SLH)
     D = Symbolics.simplify.(D)
     =#
 
-    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, A, B, C, D, Continuous())
-    
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
+
 end
 
 function J(n::Int)
@@ -268,19 +318,21 @@ function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
-    return QuantumStateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol)
+    return QuantumStateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
 end
 
-function toquadrature(sys::QuantumStateSpace)
+toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where TE = sys
+
+function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
 
     blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
 
     left = cat([blockpair[1] for blockpair in blockpairs]...;dims=(1,2))
     right = cat([blockpair[2] for blockpair in blockpairs]...;dims=(1,2))
-    
+
     oldA = sys.A
-    oldB = sys.B 
-    oldC = sys.C 
+    oldB = sys.B
+    oldC = sys.C
     oldD = sys.D
 
     n_ports = length(sys.inputs)
@@ -294,6 +346,6 @@ function toquadrature(sys::QuantumStateSpace)
     newC = simplify.(expand.(leftIO*oldC*right))
     newD = simplify.(expand.(leftIO*oldD*rightIO))
 
-    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol)
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
 end
 
