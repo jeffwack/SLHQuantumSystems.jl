@@ -86,8 +86,9 @@ end
 quadrature_parameter_names(subsys::OpticalMode) = Symbol[]
 
 function quadrature_transform(subsys::OpticalMode, params::Dict)
-    left  = 1/sqrt(2)*[1 1; -im im]
-    right = 1/sqrt(2)*[1 im; 1 -im]
+    c = 1/sqrt(Num(2))
+    left  = c*[1 1; -im im]
+    right = c*[1 im; 1 -im]
     return (left, right)
 end
 
