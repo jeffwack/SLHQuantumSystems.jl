@@ -446,7 +446,7 @@ function _build_arm_cavity_slh(arm_params, om_params, model)
     a = Destroy(hilb, :a, 1)
     b = Destroy(hilb, :b, 2)
 
-    @variables ω l κ Ω m_mirror Γ g
+    @variables ω l κ Ω m Γ g
 
     # Hamiltonian: mechanical oscillator + optomechanical coupling
     H = Ω * b' * b - g * (b' + b) * (a' + a)
@@ -455,8 +455,8 @@ function _build_arm_cavity_slh(arm_params, om_params, model)
     L_ops = [κ * a, Γ * b]
     S_mat = [1 0; 0 1]
 
-    pdict = Dict(zip(nameof.([ω, l, κ, Ω, m_mirror, Γ, g]),
-                      [ω, l, κ, Ω, m_mirror, Γ, g]))
+    pdict = Dict(zip(nameof.([ω, l, κ, Ω, m, Γ, g]),
+                      [ω, l, κ, Ω, m, Γ, g]))
     opdict = Dict(zip(getfield.([a, b], :name), [a, b]))
 
     return SLH("arm", subspaces, pdict, opdict,
@@ -508,43 +508,34 @@ function _build_param_dict(sys, arm_params, om_params, sec_params, sqz_params, m
 
     params = Dict{Any,Any}()
 
-    # Arm cavity parameters — find the symbolic variables in the system
+    # Map symbolic variables to numerical values.
+    # After concatenation, keys become "arm_κ", "sec_Δ", etc.
+    # For single subsystems, keys are just "κ", "Δ", etc.
+    _base(s) = occursin("_", s) ? String(split(s, "_")[end]) : s
+    _prefix(s) = occursin("_", s) ? join(split(s, "_")[1:end-1], "_") : ""
+
+    function _lookup(base, prefix)
+        is_sec = startswith(prefix, "sec") || startswith(prefix, "SEC")
+
+        base == "ω" && return ω_l
+        base == "l" && return om_params.L_arm
+        base == "Ω" && return om_params.Ω_mech
+        base == "m" && return om_params.mass
+        base == "Γ" && return 0.0
+        base == "g" && return om_params.g_om
+        base == "κ" && is_sec && return (sec_params !== nothing ? sec_params.κ_sec : 0.0)
+        base == "κ" && return arm_params.κ_itm
+        base == "Δ" && is_sec && return (sec_params !== nothing ? sec_params.Δ_sec : 0.0)
+        base == "Δ" && return 0.0
+        base == "ϵ" && return (sqz_params !== nothing ? sqz_params.r : 0.0)
+        return nothing
+    end
+
     for (key, val) in sys.parameters
         skey = string(key)
-
-        # Arm parameters (may be prefixed with "arm_" or "Arm_" after concatenation)
-        if endswith(skey, "ω") || skey == "ω"
-            params[val] = ω_l
-        elseif endswith(skey, "l") || skey == "l"
-            params[val] = om_params.L_arm
-        elseif endswith(skey, "κ") || skey == "κ"
-            # Could be arm κ or SEC κ — distinguish by prefix
-            # κ_itm and κ_sec are already √(T·c/(4L)), ready for L = κ·a
-            if startswith(skey, "sec") || startswith(skey, "SEC")
-                params[val] = sec_params !== nothing ? sec_params.κ_sec : 0.0
-            else
-                params[val] = arm_params.κ_itm
-            end
-        elseif endswith(skey, "Ω") || skey == "Ω"
-            params[val] = om_params.Ω_mech
-        elseif skey == "m_mirror" || endswith(skey, "m_mirror")
-            params[val] = om_params.mass
-        elseif endswith(skey, "Γ") || skey == "Γ"
-            params[val] = 0.0   # no mechanical damping
-        elseif endswith(skey, "g") || skey == "g"
-            params[val] = om_params.g_om
-        elseif endswith(skey, "Δ") || skey == "Δ"
-            if startswith(skey, "sec") || startswith(skey, "SEC")
-                params[val] = sec_params !== nothing ? sec_params.Δ_sec : 0.0
-            else
-                params[val] = 0.0
-            end
-        elseif endswith(skey, "ϵ") || skey == "ϵ"
-            if sqz_params !== nothing
-                params[val] = sqz_params.r
-            else
-                params[val] = 0.0
-            end
+        result = _lookup(_base(skey), _prefix(skey))
+        if result !== nothing
+            params[val] = result
         end
     end
 
