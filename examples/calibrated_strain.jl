@@ -150,15 +150,15 @@ println("  vacuum reference   = $(round(sqrt(0.5), sigdigits=4))")
 #
 #   F_phys(ω) = m·(L_arm/2)·(−ω²)·h
 #
-# In SLH quadrature units (p_zpf = m·Ω·x_zpf):
+# In SLH quadrature units (r = p_phys/(√2·p_zpf)):
 #
-#   F_SLH(ω) = F_phys / (2·p_zpf)
-#            = −ω²·L_arm / (4·Ω_mech·x_zpf) · h
+#   F_SLH(ω) = F_phys / (√2·p_zpf)
+#            = −ω²·L_arm / (2√2·Ω_mech·x_zpf) · h
 #
 # The signal transfer function from strain h to optical phase output (index 2)
 # is therefore
 #
-#   H_signal(ω) = T_p(ω) · ω²·L_arm / (4·Ω_mech·x_zpf)
+#   H_signal(ω) = T_p(ω) · ω²·L_arm / (2√2·Ω_mech·x_zpf)
 #
 # where T_p = fresponse_state2output(·, 4, 2) is the transfer from a
 # unit drive on the momentum state to the homodyne output.
@@ -171,7 +171,7 @@ x_zpf = zpf_length(mech_sub, numeric.parameters)
 l_arm = numeric.parameters[param_key(opt_sub, :l)]
 
 # Signal transfer function (dimensionless: output response per unit strain h)
-H_signal = T_mech2opt .* (freq.^2 .* l_arm ./ (4 .* Ω_mech .* x_zpf))
+H_signal = T_mech2opt .* (freq.^2 .* l_arm ./ (2*sqrt(2) .* Ω_mech .* x_zpf))
 
 # Strain-referred noise ASD  [1/√Hz, SI via x_zpf]
 h_ASD = asd(sd, "l_out_p") ./ abs.(H_signal)

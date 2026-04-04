@@ -16,8 +16,12 @@ struct LadderBasis <: BasisType end
 
 """
 Quadrature (amplitude/phase) operator basis.
-State vector ordered as (x₁, p₁, x₂, p₂, ...).
-ABCD matrices are real-valued for physical systems.
+State vector ordered as (X₁, P₁, X₂, P₂, ...).
+All modes use the same 1/√2 unitary transform from the ladder basis.
+For optical modes: X = (a+a†)/√2, P = i(a†-a)/√2.
+For mechanical modes: q = (b+b†)/√2, r = i(b†-b)/√2 (dimensionless, normalized
+consistently with optical quadratures; SI conversion via x_zpf, p_zpf).
+ABCD matrices are real-valued for physical systems; all entries in rad/s.
 """
 struct QuadratureBasis <: BasisType end
 
@@ -325,7 +329,7 @@ toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where TE = sys
 
 function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
 
-    blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
+    blockpairs = [quadrature_transform(mode, Dict()) for mode in sys.subspaces]
 
     left = cat([blockpair[1] for blockpair in blockpairs]...;dims=(1,2))
     right = cat([blockpair[2] for blockpair in blockpairs]...;dims=(1,2))
@@ -337,7 +341,7 @@ function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
 
     n_ports = length(sys.inputs)
 
-    blockpairsIO = [quadratureblocks(sys,GenericMode("")) for ii in 1:n_ports]
+    blockpairsIO = [quadrature_transform(GenericMode(""), Dict()) for ii in 1:n_ports]
     leftIO = cat([blockpair[1] for blockpair in blockpairsIO]...;dims=(1,2))
     rightIO = cat([blockpair[2] for blockpair in blockpairsIO]...;dims=(1,2))
 

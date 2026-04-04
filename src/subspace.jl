@@ -37,13 +37,12 @@ function operatornames(subsys::MechanicalMode)
     return [:b]
 end
 
-quadrature_parameter_names(subsys::MechanicalMode) = parameternames(subsys)[1:2]
+quadrature_parameter_names(subsys::MechanicalMode) = Symbol[]
 
 function quadrature_transform(subsys::MechanicalMode, params::Dict)
-    m = params[param_key(subsys, :m)]
-    w = params[param_key(subsys, :Ω)]
-    left  = [0.5 0.5; -0.5im*m*w 0.5im*m*w]
-    right = [1 im/(m*w); 1 -im/(m*w)]
+    c = 1/sqrt(Num(2))
+    left  = c*[1 1; -im im]
+    right = c*[1 im; 1 -im]
     return (left, right)
 end
 
@@ -64,7 +63,15 @@ function zpf_momentum(subsys::MechanicalMode, params::Dict)
     return sqrt(ℏ_SI.val * m * Ω / 2)
 end
 
-"""SI normalization diagonal [x_zpf, p_zpf] for the mechanical quadrature state vector."""
+"""
+    quadrature_scale(subsys::MechanicalMode, params) → [x_zpf, p_zpf]
+
+SI conversion factors for the mechanical quadrature state vector.
+The dimensionless quadrature states relate to physical quantities as:
+  x_phys = √2 · x_zpf · q
+  p_phys = √2 · p_zpf · r
+where q = (b+b†)/√2 and r = i(b†-b)/√2 are the SLH quadrature coordinates.
+"""
 function quadrature_scale(subsys::MechanicalMode, params::Dict)
     return [zpf_length(subsys, params), zpf_momentum(subsys, params)]
 end
@@ -114,11 +121,7 @@ quadrature_transform(subsys::GenericMode, params::Dict) = quadrature_transform(O
 quadrature_scale(subsys::GenericMode, params::Dict) = [1.0, 1.0]
 
 
-# Compatibility shim: keep quadratureblocks working for existing call sites
-function quadratureblocks(sys, subsys::Subspace)
-    relevant = Dict(k => sys.parameters[k] for k in quadrature_parameter_names(subsys))
-    return quadrature_transform(subsys, relevant)
-end
+quadrature_transform(subsys::Subspace) = quadrature_transform(subsys, Dict())
 
 
 """

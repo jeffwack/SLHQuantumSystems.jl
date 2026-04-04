@@ -2,6 +2,8 @@ using SLHQuantumSystems
 using Test
 using SecondQuantizedAlgebra
 using Symbolics
+using LinearAlgebra
+using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
 
 @testset "SLHQuantumSystems.jl" begin
     
