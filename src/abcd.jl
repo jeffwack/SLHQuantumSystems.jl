@@ -86,17 +86,17 @@ function _build_ladder_ss(sys::SLH)
     H = sys.H
     
     # First we need to ensure that this is a linear quantum system.
-    # This means is consists of bosonic modes with quadratic couplings
+    # This means it consists of bosonic modes with quadratic couplings.
     hilb = SecondQuantizedAlgebra.hilbert(H)
-    if hilb isa SecondQuantizedAlgebra.ProductSpace    
+    if hilb isa SecondQuantizedAlgebra.ProductSpace
         for subspace in hilb.spaces
             if !(subspace isa FockSpace)
-                return error("Hilbert space contains non-bosonic modes")
+                return error("QuantumStateSpace is defined only for linear-bosonic SLH systems; Hilbert space contains a non-FockSpace factor")
             end
         end
     else
         if !(hilb isa FockSpace)
-            return error("Hilbert space contains non-bosonic modes")
+            return error("QuantumStateSpace is defined only for linear-bosonic SLH systems; Hilbert space is not a FockSpace")
         end
     end
     

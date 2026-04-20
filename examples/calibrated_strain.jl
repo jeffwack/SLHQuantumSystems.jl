@@ -2,7 +2,7 @@ using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
 using ControlSystems
-using Plots
+using GLMakie
 using LinearAlgebra
 using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI, SpeedOfLightInVacuum as c_SI
 
@@ -189,40 +189,32 @@ println("  ratio h/h_SQL = $(round(h_ASD[idx_100]/h_SQL[idx_100], sigdigits=3))"
 # Plotting
 # ============================================================================
 
-plot(freq_Hz, ASD_amp,
-    xscale    = :log10,
-    yscale    = :log10,
-    xlabel    = "Frequency [Hz]",
-    ylabel    = "Output noise ASD  [1/√Hz,  ℏ=1 units]",
-    title     = "Optomechanical cavity — vacuum output noise",
-    label     = "l_out amplitude quad",
-    linewidth = 2)
-
-plot!(freq_Hz, ASD_phase,
-    label     = "l_out phase quad (homodyne)",
-    linewidth = 2)
-
-hline!([sqrt(0.5)],
-    label     = "vacuum reference  √½ ≈ 0.707",
-    linestyle = :dash,
-    color     = :gray)
+fig_noise = Figure()
+ax_noise = Axis(fig_noise[1, 1];
+    xscale = log10, yscale = log10,
+    xlabel = "Frequency [Hz]",
+    ylabel = "Output noise ASD  [1/√Hz,  ℏ=1 units]",
+    title  = "Optomechanical cavity — vacuum output noise")
+lines!(ax_noise, freq_Hz, ASD_amp;   linewidth = 2, label = "l_out amplitude quad")
+lines!(ax_noise, freq_Hz, ASD_phase; linewidth = 2, label = "l_out phase quad (homodyne)")
+hlines!(ax_noise, [sqrt(0.5)]; linestyle = :dash, color = :gray,
+    label = "vacuum reference  √½ ≈ 0.707")
+axislegend(ax_noise; position = :rt)
+display(fig_noise)
 
 # ============================================================================
 # LIGO sensitivity bucket
 # ============================================================================
 
-plot(freq_Hz, h_ASD,
-    xscale    = :log10,
-    yscale    = :log10,
-    xlabel    = "Frequency [Hz]",
-    ylabel    = "Strain sensitivity  [1/√Hz]",
-    title     = "Optomechanical cavity — strain sensitivity",
-    label     = "quantum noise (shot + radiation pressure)",
-    linewidth = 2,
-    color     = :blue)
-
-plot!(freq_Hz, h_SQL,
-    label     = "SQL (free mass)",
-    linestyle = :dash,
-    linewidth = 2,
-    color     = :red)
+fig_strain = Figure()
+ax_strain = Axis(fig_strain[1, 1];
+    xscale = log10, yscale = log10,
+    xlabel = "Frequency [Hz]",
+    ylabel = "Strain sensitivity  [1/√Hz]",
+    title  = "Optomechanical cavity — strain sensitivity")
+lines!(ax_strain, freq_Hz, h_ASD; linewidth = 2, color = :blue,
+    label = "quantum noise (shot + radiation pressure)")
+lines!(ax_strain, freq_Hz, h_SQL; linewidth = 2, color = :red, linestyle = :dash,
+    label = "SQL (free mass)")
+axislegend(ax_strain; position = :rt)
+display(fig_strain)

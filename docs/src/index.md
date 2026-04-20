@@ -20,18 +20,37 @@ The SLH framework represents each open quantum systems with three components:
 
 
 ## Scope of this package
-SLHQuantumSystems.jl allows users to create large quantum systems by composing smaller, named systems into a single SLH 'block' with a hiearchy of named inputs, outputs, sytem operators, and parameters.
-This pakage depends on SecondQuantizedAlgebra.jl to provide quantum operators, their commutation relations and algebraic manipulation.
-We also use Symbolics.jl to provide symbols for the system parameters, which are real or complex constants.
+
+SLHQuantumSystems.jl is a standalone package for:
+
+- Creating SLH triples `(S, L, H)` with symbolic parameters (Symbolics.jl)
+  and quantum operators (SecondQuantizedAlgebra.jl).
+- Composing named SLH 'blocks' via `concatenate` and `feedbackreduce`. Input,
+  output, operator, and parameter names are promoted hierarchically during
+  composition to avoid collisions.
+- Converting **linear-bosonic** SLH systems to state-space form
+  (`QuantumStateSpace <: ControlSystems.AbstractStateSpace`) for
+  frequency-domain analysis with ControlSystems.jl (`freqresp`, Bode, …).
+- Physical-units-aware output via mode metadata (`OpticalMode`,
+  `MechanicalMode`) and SI conversion of spectral densities.
+
+### Out of scope (by design)
+
+- **Wiring-diagram primitives and port-based composition** (`Mirror`,
+  `BeamSplitter`, `link!`, cavity detection). These live in Breadboard.
+- **Non-bosonic Hilbert spaces** in the state-space conversion. Atomic
+  (`NLevelSpace`) models compose at the SLH layer but are not linearized
+  through the ABCD pipeline.
+- **Hierarchical parameter storage.** SLH models carry a flat parameter
+  dict. Promotion during `concatenate` keeps names unique, but the dict
+  has no nested structure; hierarchy is the wiring layer's concern.
+- **YAML/JSON model specs** and **time-domain simulation**.
 
 ### Component Library
-The SLH framework enables you to create complicated quantum systems by combining
-simple, reusable components
-- Pre-built quantum components including:
-  - Basic cavities
-  - Squeezing cavities  
-  - Radiation pressure cavities
-  - Jaynes-Cummings QED cavity
+
+A small set of reusable components ([`cavity`](@ref),
+[`squeezing_cavity`](@ref)). The library is intentionally thin; richer
+physical primitives are planned in the Breadboard wiring-diagram layer.
 
 
 ## Dependencies

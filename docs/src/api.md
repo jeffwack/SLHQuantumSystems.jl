@@ -28,15 +28,6 @@ cavity
 squeezing_cavity
 ```
 
-## Optical Model Parser
-
-```@docs
-load_optical_model
-compile_to_slh
-derive_cavity_params
-derive_optomechanical_params
-```
-
 ## Function Index
 
 ```@index

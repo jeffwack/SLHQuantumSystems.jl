@@ -34,10 +34,4 @@ export cavity, squeezing_cavity
 include("spectral_density.jl")
 export SpectralDensityMatrix, spectral_density, vacuum_noise, asd, to_si
 
-include("optical_model.jl")
-export OpticalModel, OpticalMirror, OpticalSqueezer, OpticalSpace
-export OpticalConnection, StrainExcitation
-export load_optical_model, compile_to_slh
-export derive_cavity_params, derive_optomechanical_params
-
 end
