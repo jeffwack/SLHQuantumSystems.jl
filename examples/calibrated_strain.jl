@@ -4,24 +4,27 @@ using Symbolics
 using ControlSystems
 using GLMakie
 using LinearAlgebra
+using DelimitedFiles
 using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI, SpeedOfLightInVacuum as c_SI
 
 # ============================================================================
 # LIGO Physical Parameters (from GWINC A+ configuration)
 # ============================================================================
+ℏ        = ℏ_SI.val                         # J·s 
+c_phys   = c_SI.val                          # m/s
+λ        = 1.064e-6                          # m  (Nd:YAG)
+ω_l      = 2π * c_phys / λ                  # rad/s
 
-const ℏ        = ℏ_SI.val                         # J·s (authoritative)
-const c_phys   = c_SI.val                          # m/s
-const λ        = 1.064e-6                          # m  (Nd:YAG)
-const ω_l      = 2π * c_phys / λ                  # rad/s
+L_arm    = 3995.0                            # m  (arm cavity length)
+T_ITM    = 0.014                             # power transmittance of ITM
+κ_cavity = T_ITM * c_phys / (2*L_arm)       # amplitude decay rate [rad/s]
 
-const L_arm    = 3995.0                            # m  (arm cavity length)
-const T_ITM    = 0.014                             # power transmittance of ITM
-const κ_cavity = T_ITM * c_phys / (4*L_arm)       # amplitude decay rate [rad/s]
+P_circ   = 750e3                             # W  (circulating power)
+m_mirror = 39.6/2                            # kg
+Ω_mech   = 2π * 5e-6                         # rad/s — physical pendulum (~1 Hz) (we do not support free mass for now)
 
-const P_circ   = 750e3                             # W  (circulating power)
-const m_mirror = 39.6                              # kg
-const Ω_mech   = 2π * 1.0                         # rad/s — physical pendulum (~1 Hz)
+mech_couple = 1e-23
+
 
 # ============================================================================
 # SLH model: optomechanical cavity (Chen 2013 eq 2.4)
@@ -51,170 +54,132 @@ slh = SLH("opto", subspaces, pdict, opdict,
 qss = toquadrature(QuantumStateSpace(slh))
 
 # ============================================================================
-# Coupling constants — derived via Subspace API
+# Coupling constants — inlined (previously g0_coupling / g_coupling from
+# src/subspace.jl). Spelled out so the numerical flow is visible.
 # ============================================================================
 
-# Numeric parameter dict used for substitution
-# g_optomech is computed from g0_coupling so we need a preliminary param dict
-# without g first, then compute g and add it.
+# Zero-point fluctuation length of the mechanical mode [m]
+# Would like to calculate as:
+# x_zpf = zpf_length(mech_sub, numeric.parameters)
+# but numeric is not defined yet, this is a bit of a circular requirement
+x_zpf = sqrt(ℏ/(2*m_mirror*Ω_mech))
 
-prelim_params = Dict(:ω => ω_l, :l => L_arm, :κ => sqrt(κ_cavity),
-                     :Ω => Ω_mech, :m => m_mirror, :Γ => 0.0)
+# Single-photon optomechanical coupling [rad/s]
+#   g₀ = (ω_L / L) · x_zpf
+g_OM = (ω_l /(L_arm)) * x_zpf
 
-g_OM       = g0_coupling(mech_sub, opt_sub, prelim_params)   # [rad/s]
-N_bar      = P_circ / (ℏ * ω_l)                             # intracavity photon number
-g_optomech = g_coupling(mech_sub, opt_sub, prelim_params, N_bar)  # linearized coupling
+# Stored intracavity photon number (dimensionless)
+#   n̄_cav = P_circ · (2L/c) / (ℏ·ω_l)
+# The (2L/c) round-trip time converts circulating photon *flux* [1/s]
+# into the population actually resonating inside the cavity.
+N_bar = P_circ * (2*L_arm/c_phys) / (ℏ * ω_l)
 
-println("=== LIGO Parameters ===")
-println("κ/(2π)    = $(round(κ_cavity/(2π),   digits=1)) Hz")
-println("Ω/(2π)    = $(round(Ω_mech/(2π),     digits=2)) Hz  (pendulum, below signal band)")
+# Linearized optomechanical coupling [rad/s]
+#   g = g₀·√n̄  (used as the coefficient of (a+a†)(b+b†) in H)
+g_optomech = g_OM * sqrt(N_bar)
+
+println("=== Parameters ===")
+println("Ω/(2π)    = $(round(Ω_mech/(2π),     digits=2)) Hz  (mechanical pendulum resonance )")
 println("g_OM/(2π) = $(round(g_OM/(2π),       sigdigits=3)) Hz  (single-photon coupling)")
 println("N̄         = $(round(N_bar,           sigdigits=3)) photons")
-println("G/(2π)    = $(round(g_optomech/(2π), sigdigits=3)) Hz  (linearized coupling)")
-println("G/κ       = $(round(g_optomech/κ_cavity, sigdigits=3))  (strong-coupling regime)")
 
 # ============================================================================
 # Numerical substitution
 # ============================================================================
 
 paramdict = Dict(
-    ω => 0.0,              # on resonance
+    ω => 0,              # cavity detuning
     l => L_arm,
-    κ => sqrt(κ_cavity),   # coupling amplitude [√(rad/s)]; κ² is decay rate
+    κ => sqrt(κ_cavity),  
     Ω => Ω_mech,
     m => m_mirror,
     g => g_optomech,
-    Γ => 0.0               # no mechanical damping → marginally stable (poles at ±iΩ)
+    Γ => mech_couple               # mechanical damping 
 )
 
 numeric = substitute(qss, paramdict)
-
-poles_numeric = eigvals(Matrix{ComplexF64}(numeric.A))
-println("\n=== System Poles ===")
-for p in sort(poles_numeric, by=real)
-    println("  $(round(real(p), sigdigits=4)) + $(round(imag(p), sigdigits=4))i  rad/s")
-end
 
 # ============================================================================
 # Frequency grid (angular, rad/s)
 # ============================================================================
 
-freq_Hz = collect(logrange(0.1, 20_000.0, 500))
-freq    = 2π .* freq_Hz
+freq_hz = collect(logrange(0.1, 20_000.0, 500))
+freq    = 2π .* freq_hz
 
 # ============================================================================
-# Output noise spectral density
+# output noise spectral density
 # ============================================================================
+
+G = freqresp(numeric,freq)
 
 sd = spectral_density(numeric, freq)
 
-# ============================================================================
-# Sanity check: shot noise of vacuum = 1/2
-# ============================================================================
 
-let
-    p0  = merge(paramdict, Dict(g => 0.0))
-    sd0 = spectral_density(substitute(qss, p0), freq)
+fig = Figure()
+ax_tf = Axis(fig[1, 1];
+    xscale = log10, yscale = log10,
+    xlabel = "Frequency [Hz]",
+    title = "transfer functions (unitless)")
 
-    max_err = maximum(
-        abs(real(sd0.S[i, i, k]) - 0.5)
-        for k in axes(sd0.S, 3), i in 1:size(sd0.S, 1)
-    )
+for (ii,iname) in enumerate(sd.names)
+    for (jj,jname) in enumerate(sd.names)
+        lines!(ax_tf,freq_hz,abs.(G[ii,jj,:]),label="$iname, $jname")
+    end
+end
+fig[1,2] = Legend(fig,ax_tf)
 
-    @assert max_err < 1e-8 "Vacuum shot noise test FAILED  (max_err = $max_err)"
-    println("\n✓ Vacuum shot noise test passed  (g=0, max diag error = $(round(max_err, sigdigits=2)))")
+
+ax_noise = Axis(fig[2, 1];
+    xscale = log10, yscale = log10,
+    limits = (nothing,nothing,nothing,nothing),
+    xlabel = "Frequency [Hz]",
+    title = "spectral densities (quanta per root hertz)")
+
+for ii in sd.names
+    for jj in sd.names
+        lines!(ax_noise,freq_hz,abs.(sd[ii,jj]),label="$ii, $jj")
+    end
 end
 
-# ============================================================================
-# Optical output noise
-# ============================================================================
 
-ASD_amp   = asd(sd, "l_out_x")
-ASD_phase = asd(sd, "l_out_p")
+fig[2,2] = Legend(fig,ax_noise)
 
-idx_100 = argmin(abs.(freq_Hz .- 100.0))
-println("\n=== Optical output noise at 100 Hz ===")
-println("  amplitude quad ASD = $(round(ASD_amp[idx_100],   sigdigits=4))")
-println("  phase quad     ASD = $(round(ASD_phase[idx_100], sigdigits=4))")
-println("  vacuum reference   = $(round(sqrt(0.5), sigdigits=4))")
 
-# ============================================================================
-# Strain sensitivity
-#
-# A gravitational wave of strain h(ω) causes a differential arm-length change
-# δL = h·L_arm/2, which acts on the mirror as a tidal acceleration
-#
-#   ẍ_phys = (L_arm/2)·ḧ   →   δx_phys = (L_arm/2)·h   (free-mass limit)
-#
-# This is equivalent to a driving force on the mechanical momentum (state 4)
-#
-#   F_phys(ω) = m·(L_arm/2)·(−ω²)·h
-#
-# In SLH quadrature units (r = p_phys/(√2·p_zpf)):
-#
-#   F_SLH(ω) = F_phys / (√2·p_zpf)
-#            = −ω²·L_arm / (2√2·Ω_mech·x_zpf) · h
-#
-# The signal transfer function from strain h to optical phase output (index 2)
-# is therefore
-#
-#   H_signal(ω) = T_p(ω) · ω²·L_arm / (2√2·Ω_mech·x_zpf)
-#
-# where T_p = fresponse_state2output(·, 4, 2) is the transfer from a
-# unit drive on the momentum state to the homodyne output.
-# ============================================================================
-
-T_mech2opt = fresponse_state2output(numeric, freq, 4, 2)   # complex, length nω
-
-# x_zpf and l_arm read from the numeric parameter dict via Subspace API
-x_zpf = zpf_length(mech_sub, numeric.parameters)
-l_arm = numeric.parameters[param_key(opt_sub, :l)]
-
-# Signal transfer function (dimensionless: output response per unit strain h)
-H_signal = T_mech2opt .* (freq.^2 .* l_arm ./ (2*sqrt(2) .* Ω_mech .* x_zpf))
-
-# Strain-referred noise ASD  [1/√Hz, SI via x_zpf]
-h_ASD = asd(sd, "l_out_p") ./ abs.(H_signal)
-
-# Standard Quantum Limit for a free mass  h_SQL = √(8ℏ / (m ω² L²))
-h_SQL = sqrt.(8 .* ℏ ./ (m_mirror .* freq.^2 .* L_arm^2))
-
-idx_100 = argmin(abs.(freq_Hz .- 100.0))
-println("\n=== Strain sensitivity at 100 Hz ===")
-println("  h_ASD = $(round(h_ASD[idx_100], sigdigits=3)) /√Hz")
-println("  h_SQL = $(round(h_SQL[idx_100], sigdigits=3)) /√Hz")
-println("  ratio h/h_SQL = $(round(h_ASD[idx_100]/h_SQL[idx_100], sigdigits=3))")
-
-# ============================================================================
-# Plotting
-# ============================================================================
-
-fig_noise = Figure()
-ax_noise = Axis(fig_noise[1, 1];
+ax_sig = Axis(fig[1,3];
     xscale = log10, yscale = log10,
     xlabel = "Frequency [Hz]",
-    ylabel = "Output noise ASD  [1/√Hz,  ℏ=1 units]",
-    title  = "Optomechanical cavity — vacuum output noise")
-lines!(ax_noise, freq_Hz, ASD_amp;   linewidth = 2, label = "l_out amplitude quad")
-lines!(ax_noise, freq_Hz, ASD_phase; linewidth = 2, label = "l_out phase quad (homodyne)")
-hlines!(ax_noise, [sqrt(0.5)]; linestyle = :dash, color = :gray,
-    label = "vacuum reference  √½ ≈ 0.707")
-axislegend(ax_noise; position = :rt)
-display(fig_noise)
+    title = "signal (light quanta per strain?)")
 
-# ============================================================================
-# LIGO sensitivity bucket
-# ============================================================================
+ii = 2
+jj = 4
 
-fig_strain = Figure()
-ax_strain = Axis(fig_strain[1, 1];
+sig = G[ii,jj,:] .* L_arm .* freq.^2 ./ (2*sqrt(2) .* Ω_mech .* x_zpf .* mech_couple)
+    
+lines!(ax_sig,freq_hz,abs.(sig),label="$(sd.names[ii]), $(sd.names[jj])")
+
+fig[1,4] = Legend(fig,ax_sig)
+
+ax_strain = Axis(fig[2,3];
     xscale = log10, yscale = log10,
     xlabel = "Frequency [Hz]",
-    ylabel = "Strain sensitivity  [1/√Hz]",
-    title  = "Optomechanical cavity — strain sensitivity")
-lines!(ax_strain, freq_Hz, h_ASD; linewidth = 2, color = :blue,
-    label = "quantum noise (shot + radiation pressure)")
-lines!(ax_strain, freq_Hz, h_SQL; linewidth = 2, color = :red, linestyle = :dash,
-    label = "SQL (free mass)")
-axislegend(ax_strain; position = :rt)
-display(fig_strain)
+    title =  "Strain sensitivity")
+
+strainsense = sqrt.(real.(sd["l_out_p","l_out_p"])) ./ abs.(sig)
+
+lines!(ax_strain,freq_hz,strainsense)
+
+# ============================================================================
+# CSV output — for cross-model comparison (see examples/compare_strain.py)
+# ============================================================================
+let
+    outdir = joinpath(@__DIR__, "calibrated_strain_out")
+    isdir(outdir) || mkdir(outdir)
+    csvpath = joinpath(outdir, "freq_response.csv")
+    open(csvpath, "w") do io
+        println(io, "freq_Hz,h_ASD")
+        writedlm(io, hcat(freq_hz, strainsense), ',')
+    end
+    println("wrote $csvpath")
+end
+
+fig

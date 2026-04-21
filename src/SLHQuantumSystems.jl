@@ -14,7 +14,6 @@ export parameternames, operatornames, OpticalMode, MechanicalMode, GenericMode
 export quadrature_parameter_names, quadrature_transform, quadrature_scale
 export zpf_length, zpf_momentum
 export g0_coupling, g_coupling
-export quadratureblocks  # compatibility shim
 export param_key
 
 include("slh.jl")
@@ -32,6 +31,6 @@ include("componentlibrary.jl")
 export cavity, squeezing_cavity
 
 include("spectral_density.jl")
-export SpectralDensityMatrix, spectral_density, vacuum_noise, asd, to_si
+export SpectralDensityMatrix, spectral_density, vacuum_noise
 
 end

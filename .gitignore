@@ -4,3 +4,4 @@ docs/build/
 docs/Manifest.toml
 docs/src/generated/*
 .tmp/*
+examples/calibrated_strain_out/

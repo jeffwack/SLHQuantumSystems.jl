@@ -94,60 +94,10 @@ function spectral_density(sys::QuantumStateSpace, freqs::AbstractVector{<:Real};
     S = Array{ComplexF64}(undef, nout, nout, nω)
     for k in 1:nω
         Gk = G[:, :, k]
-        S[:, :, k] = Gk * S_in * Gk'
+        S[:, :, k] = Gk * S_in * adjoint(Gk)
     end
 
     names = _quadrature_output_names(sys)
     return SpectralDensityMatrix(collect(Float64, freqs), S, names)
 end
 
-"""
-    asd(sd::SpectralDensityMatrix) → Matrix (nout × nω)
-
-Return the amplitude spectral density √|S[i,i,k]| for each diagonal
-element.
-"""
-function asd(sd::SpectralDensityMatrix)
-    nout = size(sd.S, 1)
-    nω   = size(sd.S, 3)
-    result = zeros(nout, nω)
-    for i in 1:nout
-        result[i, :] = sqrt.(abs.(sd.S[i, i, :]))
-    end
-    return result
-end
-
-"""
-    asd(sd::SpectralDensityMatrix, name::String) → Vector (nω)
-
-Return the amplitude spectral density for the named diagonal channel.
-"""
-asd(sd::SpectralDensityMatrix, name::String) =
-    sqrt.(abs.(real.(sd[name, name])))
-
-asd(sd::SpectralDensityMatrix, name::Symbol) = asd(sd, string(name))
-
-"""
-    to_si(sd::SpectralDensityMatrix, sys::QuantumStateSpace) → SpectralDensityMatrix
-
-Convert a SpectralDensityMatrix from natural (ℏ=1) units to SI units
-using the zero-point normalization factors from `sys.subspaces`.
-"""
-function to_si(sd::SpectralDensityMatrix, sys::QuantumStateSpace)
-    scale = _si_scale_vector(sys)
-    outer = scale * scale'
-    nω    = size(sd.S, 3)
-    S_si  = Array{ComplexF64}(undef, size(sd.S)...)
-    for k in 1:nω
-        S_si[:, :, k] = outer .* sd.S[:, :, k]
-    end
-    return SpectralDensityMatrix(sd.freqs, S_si, sd.names)
-end
-
-function _si_scale_vector(sys::QuantumStateSpace)
-    scales = Float64[]
-    for subsys in sys.subspaces
-        append!(scales, quadrature_scale(subsys, sys.parameters))
-    end
-    return scales
-end
