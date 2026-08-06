@@ -57,6 +57,6 @@ Contributions to this package are welcome! Before making a PR, you should:
 - build the documentation
 ```julia
 |pkg> activate ./docs/
-|julia> using LiveServer; servedocs()
+|julia> using LiveServer; servedocs(skip_dir="docs/src/generated")
 ```
 

@@ -53,13 +53,7 @@ nstates(sys::QuantumStateSpace)  = size(sys.A, 1)
 ninputs(sys::QuantumStateSpace)  = size(sys.B, 2)
 noutputs(sys::QuantumStateSpace) = size(sys.C, 1)
 
-const _COMPOSE_ERROR = """
-    series and feedback are not defined for QuantumStateSpace.
-    Open quantum systems have a richer composition algebra than classical state-space:
-    the Hamiltonian acquires correction terms when loops are closed (Combes eq. 61).
-    Build composite systems at the SLH level using `concatenate` and `feedbackreduce`,
-    then convert the completed model to QuantumStateSpace.
-    """
+const _COMPOSE_ERROR = """not implemented"""
 
 series(::QuantumStateSpace, ::QuantumStateSpace)   = error(_COMPOSE_ERROR)
 feedback(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
@@ -327,6 +321,14 @@ end
 
 toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where TE = sys
 
+# Matrix products can nest a complex-valued Num inside a Complex{Num}, which
+# Symbolics.expand chokes on (unwrap tries to build a Complex{Real}). Folding the
+# imaginary unit back into a single symbolic expression makes it expandable.
+flattencomplex(z::Complex) = Symbolics.wrap(Symbolics.unwrap(real(z)) + im*Symbolics.unwrap(imag(z)))
+flattencomplex(z) = z
+
+expandsimplify(z) = simplify(expand(flattencomplex(z)))
+
 function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
 
     blockpairs = [quadrature_transform(mode, Dict()) for mode in sys.subspaces]
@@ -345,10 +347,10 @@ function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
     leftIO = cat([blockpair[1] for blockpair in blockpairsIO]...;dims=(1,2))
     rightIO = cat([blockpair[2] for blockpair in blockpairsIO]...;dims=(1,2))
 
-    newA = simplify.(expand.(left*oldA*right))
-    newB = simplify.(expand.(left*oldB*rightIO))
-    newC = simplify.(expand.(leftIO*oldC*right))
-    newD = simplify.(expand.(leftIO*oldD*rightIO))
+    newA = expandsimplify.(left*oldA*right)
+    newB = expandsimplify.(left*oldB*rightIO)
+    newC = expandsimplify.(leftIO*oldC*right)
+    newD = expandsimplify.(leftIO*oldD*rightIO)
 
     return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
 end

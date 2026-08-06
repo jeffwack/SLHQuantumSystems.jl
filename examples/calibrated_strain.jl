@@ -17,7 +17,7 @@ c_phys   = c_SI.val                          # m/s
 
 L_arm    = 3995.0                            # m  (arm cavity length)
 T_ITM    = 0.014                             # power transmittance of ITM
-κ_cavity = T_ITM * c_phys / (2*L_arm)       # amplitude decay rate [rad/s]
+κ_cavity = sqrt(T_ITM * c_phys / (2*L_arm))       # amplitude decay rate [rad/s]
 
 P_circ   = 750e3                             # W  (circulating power)
 m_mirror = 39.6/2                            # kg
@@ -58,6 +58,10 @@ qss = toquadrature(QuantumStateSpace(slh))
 # src/subspace.jl). Spelled out so the numerical flow is visible.
 # ============================================================================
 
+
+# <Jeff> check with 10.1103/RevModPhys.86.1391
+
+
 # Zero-point fluctuation length of the mechanical mode [m]
 # Would like to calculate as:
 # x_zpf = zpf_length(mech_sub, numeric.parameters)
@@ -76,7 +80,7 @@ N_bar = P_circ * (2*L_arm/c_phys) / (ℏ * ω_l)
 
 # Linearized optomechanical coupling [rad/s]
 #   g = g₀·√n̄  (used as the coefficient of (a+a†)(b+b†) in H)
-g_optomech = g_OM * sqrt(N_bar)
+g_optomech = g_OM * sqrt(N_bar) #eq 30 of aspelmeyer
 
 println("=== Parameters ===")
 println("Ω/(2π)    = $(round(Ω_mech/(2π),     digits=2)) Hz  (mechanical pendulum resonance )")
@@ -90,7 +94,7 @@ println("N̄         = $(round(N_bar,           sigdigits=3)) photons")
 paramdict = Dict(
     ω => 0,              # cavity detuning
     l => L_arm,
-    κ => sqrt(κ_cavity),  
+    κ => κ_cavity,  
     Ω => Ω_mech,
     m => m_mirror,
     g => g_optomech,
@@ -167,19 +171,5 @@ ax_strain = Axis(fig[2,3];
 strainsense = sqrt.(real.(sd["l_out_p","l_out_p"])) ./ abs.(sig)
 
 lines!(ax_strain,freq_hz,strainsense)
-
-# ============================================================================
-# CSV output — for cross-model comparison (see examples/compare_strain.py)
-# ============================================================================
-let
-    outdir = joinpath(@__DIR__, "calibrated_strain_out")
-    isdir(outdir) || mkdir(outdir)
-    csvpath = joinpath(outdir, "freq_response.csv")
-    open(csvpath, "w") do io
-        println(io, "freq_Hz,h_ASD")
-        writedlm(io, hcat(freq_hz, strainsense), ',')
-    end
-    println("wrote $csvpath")
-end
 
 fig

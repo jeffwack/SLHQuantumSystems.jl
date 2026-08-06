@@ -1,6 +1,8 @@
 using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
+using ControlSystems
+using GLMakie
 
 mode = MechanicalMode("")
 

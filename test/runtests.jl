@@ -232,4 +232,24 @@ using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
         end
     end
 
+    @testset "quadrature transform with complex ladder entries" begin
+        # A squeezer cascaded into a filter cavity gives a ladder-basis A matrix
+        # whose entries are Complex{Num} with a nonzero symbolic imaginary part
+        # (the detuning terms). Symbolics.expand cannot handle those directly,
+        # so toquadrature has to flatten them first.
+        sys = feedbackreduce(concatenate([squeezing_cavity("A"), cavity("B")], "sys"),
+                             "A_out", "B_in")
+
+        qss = toquadrature(QuantumStateSpace(sys))
+        @test isa(qss, QuantumStateSpace)
+
+        # The quadrature-basis A matrix must come out real once evaluated.
+        params = qss.parameters
+        numeric = substitute(qss, Dict(params[:A_κ]   => 1.0, params[:A_ϵ]   => 0.1,
+                                       params[:B_B_κ] => 2.0, params[:B_B_Δ] => 3.0,
+                                       params[:B_B_ω] => 0.0, params[:B_B_l] => 1.0))
+        A = ssdata(numeric)[1]
+        @test all(a -> isapprox(imag(Symbolics.value(a)), 0.0; atol=1e-12), A)
+    end
+
 end
