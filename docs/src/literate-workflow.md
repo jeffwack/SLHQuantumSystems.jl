@@ -2,7 +2,7 @@
 
 This documentation uses [Literate.jl](https://fredrikekre.github.io/Literate.jl/) to automatically generate documentation pages from executable Julia scripts. This approach ensures that a single file can be executed directly while also serving as formatted documentation with explanations.
 
-## How It Works - Script Discovery and Generation
+## Script Discovery and Generation
 
 When the documentation is built, the following process occurs:
 
@@ -10,9 +10,7 @@ When the documentation is built, the following process occurs:
 2. **Conversion**: Each script is processed by Literate.jl to generate markdown in `docs/src/generated/`
 3. **Integration**: Generated markdown files are automatically added to the documentation via `GENERATED_EXAMPLE_PAGES`
 
-## Development with LiveServer
-
-For live development, use LiveServer with proper configuration to avoid double triggers:
+## Build locally with LiveServer
 
 ```julia
 using LiveServer
@@ -54,15 +52,6 @@ SLHQuantumSystems.jl/
 │   └── make.jl                 # Documenter build script
 ```
 
-## Build Process
-
-The workflow follows the official LiveServer + Literate.jl pattern:
-
-1. **generate.jl**: Uses `walkdir()` to discover all `.jl` files in `examples/`
-2. **Literate.markdown()**: Converts each script to markdown with `documenter=true, execute=false`
-3. **make.jl**: Includes `generate.jl`, then runs `makedocs()` with dynamically generated pages
-4. **LiveServer**: Watches files but skips the generated directory to prevent double builds
-
 ## Adding New Examples
 
 To add a new example to the documentation:
@@ -78,11 +67,8 @@ No manual configuration is needed! The system automatically:
 
 ## Manual Testing
 
-You can test individual examples by running them directly:
+You can test individual examples by running them directly as Julia scripts:
 
 ```julia
 julia> include("examples/cascadedcavities.jl")
 ```
-
-This ensures that your examples actually work before they become documentation.
-

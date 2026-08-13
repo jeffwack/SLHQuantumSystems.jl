@@ -28,10 +28,7 @@ param_key
 zpf_length
 zpf_momentum
 quadrature_scale
-g0_coupling
-g_coupling
 ```
-
 ## State Space
 
 ```@docs

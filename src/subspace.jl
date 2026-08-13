@@ -6,9 +6,9 @@ using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
 
 abstract type Subspace end
 
-function promote_name(mode::Subspace,parentname)
-    newname = parentname*"_"*mode.name
-    typeof(mode).name.wrapper(newname)
+function promote_name(mode::Subspace, parentname)
+    newname = parentname * "_" * mode.name
+    return typeof(mode).name.wrapper(newname)
 end
 
 """
@@ -40,9 +40,9 @@ end
 quadrature_parameter_names(subsys::MechanicalMode) = Symbol[]
 
 function quadrature_transform(subsys::MechanicalMode, params::Dict)
-    c = 1/sqrt(Num(2))
-    left  = c*[1 1; -im im]
-    right = c*[1 im; 1 -im]
+    c = 1 / sqrt(Num(2))
+    left = c * [1 1; -im im]
+    right = c * [1 im; 1 -im]
     return (left, right)
 end
 
@@ -93,9 +93,9 @@ end
 quadrature_parameter_names(subsys::OpticalMode) = Symbol[]
 
 function quadrature_transform(subsys::OpticalMode, params::Dict)
-    c = 1/sqrt(Num(2))
-    left  = c*[1 1; -im im]
-    right = c*[1 im; 1 -im]
+    c = 1 / sqrt(Num(2))
+    left = c * [1 1; -im im]
+    right = c * [1 im; 1 -im]
     return (left, right)
 end
 
@@ -122,23 +122,3 @@ quadrature_scale(subsys::GenericMode, params::Dict) = [1.0, 1.0]
 
 
 quadrature_transform(subsys::Subspace) = quadrature_transform(subsys, Dict())
-
-
-"""
-Single-photon optomechanical coupling [rad/s].
-g₀ = (ω_L / l) * x_zpf
-"""
-function g0_coupling(mech::MechanicalMode, opt::OpticalMode, params::Dict)
-    x_zpf = zpf_length(mech, params)
-    ω_L   = params[param_key(opt, :ω)]
-    l     = params[param_key(opt, :l)]
-    return (ω_L / l) * x_zpf
-end
-
-"""
-Enhanced optomechanical coupling from intracavity photon number n̄ [rad/s].
-g = g₀ * √n̄
-"""
-function g_coupling(mech::MechanicalMode, opt::OpticalMode, params::Dict, n_photon::Real)
-    return g0_coupling(mech, opt, params) * sqrt(n_photon)
-end

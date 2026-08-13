@@ -13,7 +13,6 @@ include("subspace.jl")
 export parameternames, operatornames, OpticalMode, MechanicalMode, GenericMode
 export quadrature_parameter_names, quadrature_transform, quadrature_scale
 export zpf_length, zpf_momentum
-export g0_coupling, g_coupling
 export param_key
 
 include("slh.jl")
