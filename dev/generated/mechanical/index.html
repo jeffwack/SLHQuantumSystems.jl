@@ -1,17 +1,87 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Mechanical · SLHQuantumSystems.jl</title><meta name="title" content="Mechanical · SLHQuantumSystems.jl"/><meta property="og:title" content="Mechanical · SLHQuantumSystems.jl"/><meta property="twitter:title" content="Mechanical · SLHQuantumSystems.jl"/><meta name="description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="twitter:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><meta property="twitter:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><link rel="canonical" href="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SLHQuantumSystems.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../LinearQuantumNetworks/">Linear quantum networks</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../cascadedcavities/">Cascadedcavities</a></li><li><a class="tocitem" href="../fabry_perot/">Fabry_Perot</a></li><li><a class="tocitem" href="../freqdepsqz/">Freqdepsqz</a></li><li class="is-active"><a class="tocitem" href>Mechanical</a></li><li><a class="tocitem" href="../optomechanical/">Optomechanical</a></li></ul></li><li><a class="tocitem" href="../../literate-workflow/">Literate Workflow</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Mechanical</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Mechanical</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl/blob/main/examples/mechanical.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using SLHQuantumSystems
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Mechanical · SLHQuantumSystems.jl</title><meta name="title" content="Mechanical · SLHQuantumSystems.jl"/><meta property="og:title" content="Mechanical · SLHQuantumSystems.jl"/><meta property="twitter:title" content="Mechanical · SLHQuantumSystems.jl"/><meta name="description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="twitter:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><meta property="twitter:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><link rel="canonical" href="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/mechanical/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SLHQuantumSystems.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../LinearQuantumNetworks/">Linear quantum networks</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../calibrated_strain/">Calibrated_Strain</a></li><li><a class="tocitem" href="../cascadedcavities/">Cascadedcavities</a></li><li><a class="tocitem" href="../fabry_perot/">Fabry_Perot</a></li><li><a class="tocitem" href="../freqdepsqz/">Freqdepsqz</a></li><li class="is-active"><a class="tocitem" href>Mechanical</a></li></ul></li><li><a class="tocitem" href="../../literate-workflow/">Literate Workflow</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Mechanical</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Mechanical</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl/blob/main/examples/mechanical.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
+using ControlSystems
+using GLMakie
 
 mode = MechanicalMode(&quot;&quot;)
 
 @variables Ω m Γ
-b = Destroy(FockSpace(:mass),operatornames(mode)[1])
-paramdict = Dict(zip(nameof.([Ω,m,Γ]),[Ω,m,Γ]))
+b = Destroy(FockSpace(:mass), operatornames(mode)[1])
+paramdict = Dict(zip(nameof.([Ω, m, Γ]), [Ω, m, Γ]))
 
-opdict = Dict(getfield(b,:name)=&gt;b)
+opdict = Dict(getfield(b, :name) =&gt; b)
 
-slh = SLH(&quot;mass&quot;,[mode],paramdict,opdict,[&quot;in&quot;],[&quot;out&quot;],[1],[Γ*b],Ω*b&#39;*b)
+slh = SLH(&quot;mass&quot;, [mode], paramdict, opdict, [&quot;in&quot;], [&quot;out&quot;], [1], [Γ * b], Ω * b&#39; * b)
 
-ss = StateSpace(slh)
-qss = toquadrature(ss)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">StateSpace(&quot;mass&quot;, SLHQuantumSystems.Subspace[MechanicalMode(&quot;&quot;)], Dict{Symbol, Symbolics.Num}(:m =&gt; m, :Ω =&gt; Ω, :Γ =&gt; Γ), [&quot;in&quot;], [&quot;out&quot;], Complex{Symbolics.Num}[-0.5(Γ^2) 1 / m; -m*(Ω^2) -0.5(Γ^2)], Complex{Symbolics.Num}[-0.7071067811865475Γ 0.0; 0.0 -0.7071067811865475m*Γ*Ω], Complex{Symbolics.Num}[1.414213562373095Γ 0.0; 0.0 (1.414213562373095Γ) / (m*Ω)], ComplexF64[0.9999999999999998 + 0.0im 0.0 + 0.0im; 0.0 + 0.0im 0.9999999999999998 + 0.0im])</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../freqdepsqz/">« Freqdepsqz</a><a class="docs-footer-nextpage" href="../optomechanical/">Optomechanical »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Monday 1 December 2025 06:09">Monday 1 December 2025</span>. Using Julia version 1.12.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ss = QuantumStateSpace(slh)
+qss = toquadrature(ss)
+
+paramdict = Dict(
+    Ω =&gt; 10, #10Hz resonance
+    m =&gt; 4, #kg
+    Γ =&gt; 1.0e-23
+)
+
+numeric = substitute(qss, paramdict)
+
+
+freq_hz = collect(logrange(0.1, 20_000.0, 500))
+freq = 2π .* freq_hz</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">500-element Vector{Float64}:
+      0.6283185307179586
+      0.6438773900282578
+      0.6598215286056845
+      0.6761604870027125
+      0.6929040420215935
+      0.7100622125645388
+      0.7276452656287665
+      0.7456637224500013
+      0.7641283647981058
+      0.7830502414286066
+      ⋮
+ 103329.28189307102
+ 105887.99324887247
+ 108510.0651901959
+ 111197.066695812
+ 113950.60559663222
+ 116772.32953779229
+ 119663.92696455984
+ 122627.12813265534
+ 125663.70614359173</code></pre><p>output noise spectral density</p><pre><code class="language-julia hljs">G = freqresp(numeric, freq)
+
+sd = spectral_density(numeric, freq)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SpectralDensityMatrix: 2×2 over 500 frequencies (0.1 – 20000.0 Hz)
+  Channels: out_x, out_p
+</code></pre><p>Plotting</p><pre><code class="language-julia hljs">fig = Figure()
+ax_tf = Axis(
+    fig[1, 1];
+    xscale = log10, yscale = log10,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;transfer functions (unitless)&quot;
+)
+
+for (ii, iname) in enumerate(sd.names)
+    for (jj, jname) in enumerate(sd.names)
+        lines!(ax_tf, freq_hz, abs.(G[ii, jj, :]), label = &quot;$iname, $jname&quot;)
+    end
+end
+fig[1, 2] = Legend(fig, ax_tf)
+
+
+ax_noise = Axis(
+    fig[2, 1];
+    xscale = log10, yscale = log10,
+    limits = (nothing, nothing, 10.0e-3, 10.0e3),
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;spectral densities (quanta per root hertz)&quot;
+)
+
+for ii in sd.names
+    for jj in sd.names
+        lines!(ax_noise, freq_hz, abs.(sd[ii, jj]), label = &quot;$ii, $jj&quot;)
+    end
+end
+
+fig[2, 2] = Legend(fig, ax_noise)
+
+fig</code></pre><img src="05a36990.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../freqdepsqz/">« Freqdepsqz</a><a class="docs-footer-nextpage" href="../../literate-workflow/">Literate Workflow »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 13 August 2026 20:09">Thursday 13 August 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

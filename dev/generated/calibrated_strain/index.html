@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Calibrated_Strain · SLHQuantumSystems.jl</title><meta name="title" content="Calibrated_Strain · SLHQuantumSystems.jl"/><meta property="og:title" content="Calibrated_Strain · SLHQuantumSystems.jl"/><meta property="twitter:title" content="Calibrated_Strain · SLHQuantumSystems.jl"/><meta name="description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="twitter:description" content="Documentation for SLHQuantumSystems.jl."/><meta property="og:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/calibrated_strain/"/><meta property="twitter:url" content="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/calibrated_strain/"/><link rel="canonical" href="https://jeffwack.github.io/SLHQuantumSystems.jl/generated/calibrated_strain/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SLHQuantumSystems.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../LinearQuantumNetworks/">Linear quantum networks</a></li><li><a class="tocitem" href="../../api/">API</a></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Calibrated_Strain</a><ul class="internal"><li><a class="tocitem" href="#LIGO-Physical-Parameters-(from-GWINC-A-configuration)"><span>LIGO Physical Parameters (from GWINC A+ configuration)</span></a></li><li><a class="tocitem" href="#SLH-model:-optomechanical-cavity-(Chen-2013-eq-2.4)-[Chen_2013](@cite)"><span>SLH model: optomechanical cavity (Chen 2013 eq 2.4) [2]</span></a></li><li><a class="tocitem" href="#Coupling-constants-[Aspelmeyer*Kippenberg*Marquardt_2014](@cite)"><span>Coupling constants [3]</span></a></li><li><a class="tocitem" href="#Numerical-substitution"><span>Numerical substitution</span></a></li><li><a class="tocitem" href="#Frequency-grid-(angular,-rad/s)"><span>Frequency grid (angular, rad/s)</span></a></li><li><a class="tocitem" href="#output-noise-spectral-density"><span>output noise spectral density</span></a></li></ul></li><li><a class="tocitem" href="../cascadedcavities/">Cascadedcavities</a></li><li><a class="tocitem" href="../fabry_perot/">Fabry_Perot</a></li><li><a class="tocitem" href="../freqdepsqz/">Freqdepsqz</a></li><li><a class="tocitem" href="../mechanical/">Mechanical</a></li></ul></li><li><a class="tocitem" href="../../literate-workflow/">Literate Workflow</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Calibrated_Strain</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Calibrated_Strain</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/jeffwack/SLHQuantumSystems.jl/blob/main/examples/calibrated_strain.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using SLHQuantumSystems
+using SecondQuantizedAlgebra
+using Symbolics
+using ControlSystems
+using GLMakie
+using LinearAlgebra
+using DelimitedFiles
+using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI, SpeedOfLightInVacuum as c_SI</code></pre><h2 id="LIGO-Physical-Parameters-(from-GWINC-A-configuration)"><a class="docs-heading-anchor" href="#LIGO-Physical-Parameters-(from-GWINC-A-configuration)">LIGO Physical Parameters (from GWINC A+ configuration)</a><a id="LIGO-Physical-Parameters-(from-GWINC-A-configuration)-1"></a><a class="docs-heading-anchor-permalink" href="#LIGO-Physical-Parameters-(from-GWINC-A-configuration)" title="Permalink"></a></h2><pre><code class="language-julia hljs">ℏ = ℏ_SI.val                         # J·s
+c_phys = c_SI.val                          # m/s
+λ = 1.064e-6                          # m  (Nd:YAG)
+ω_l = 2π * c_phys / λ                  # rad/s
+
+L_arm = 3995.0                            # m  (arm cavity length)
+T_ITM = 0.014                             # power transmittance of ITM
+κ_cavity = sqrt(T_ITM * c_phys / (2 * L_arm))       # amplitude decay rate [rad/s]
+
+P_circ = 750.0e3                             # W  (circulating power)
+m_mirror = 39.6 / 2                            # kg
+Ω_mech = 2π * 5.0e-6                         # rad/s — physical pendulum (~1 Hz)
+
+mech_couple = 1.0e-23;</code></pre><h2 id="SLH-model:-optomechanical-cavity-(Chen-2013-eq-2.4)-[Chen_2013](@cite)"><a class="docs-heading-anchor" href="#SLH-model:-optomechanical-cavity-(Chen-2013-eq-2.4)-[Chen_2013](@cite)">SLH model: optomechanical cavity (Chen 2013 eq 2.4) [<a href="../../#Chen_2013">2</a>]</a><a id="SLH-model:-optomechanical-cavity-(Chen-2013-eq-2.4)-[Chen_2013](@cite)-1"></a><a class="docs-heading-anchor-permalink" href="#SLH-model:-optomechanical-cavity-(Chen-2013-eq-2.4)-[Chen_2013](@cite)" title="Permalink"></a></h2><pre><code class="language-julia hljs">hilb = FockSpace(:cavity) ⊗ FockSpace(:mirror)
+subspaces = [OpticalMode(&quot;&quot;), MechanicalMode(&quot;&quot;)]
+
+opt_sub = subspaces[1]
+mech_sub = subspaces[2]
+
+a = Destroy(hilb, operatornames(opt_sub)[1], 1)
+b = Destroy(hilb, operatornames(mech_sub)[1], 2)
+
+@variables ω l κ Ω m Γ g
+
+H = Ω * b&#39; * b - g * (b&#39; + b) * (a&#39; + a)
+L_ops = [κ * a, Γ * b]
+S_mat = [1 0; 0 1]
+
+pdict = Dict(zip(nameof.([ω, l, κ, Ω, m, Γ, g]), [ω, l, κ, Ω, m, Γ, g]))
+opdict = Dict(zip(getfield.([a, b], :name), [a, b]))
+
+slh = SLH(
+    &quot;opto&quot;, subspaces, pdict, opdict,
+    [&quot;l_in&quot;, &quot;m_in&quot;], [&quot;l_out&quot;, &quot;m_out&quot;], S_mat, L_ops, H
+)
+
+qss = toquadrature(QuantumStateSpace(slh))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">QuantumStateSpace{ControlSystemsBase.Continuous, QuadratureBasis}
+A = 
+ -0.4999999999999999(κ^2)                       0.0                       0.0                       0.0
+                      0.0  -0.4999999999999999(κ^2)       1.9999999999999996g                       0.0
+                      0.0                       0.0  -0.4999999999999999(Γ^2)       0.9999999999999998Ω
+      1.9999999999999996g                       0.0      -0.9999999999999998Ω  -0.4999999999999999(Γ^2)
+B = 
+ -0.9999999999999998κ                   0.0                   0.0                   0.0
+                  0.0  -0.9999999999999998κ                   0.0                   0.0
+                  0.0                   0.0  -0.9999999999999998Γ                   0.0
+                  0.0                   0.0                   0.0  -0.9999999999999998Γ
+C = 
+ 0.9999999999999998κ                  0.0                  0.0                  0.0
+                 0.0  0.9999999999999998κ                  0.0                  0.0
+                 0.0                  0.0  0.9999999999999998Γ                  0.0
+                 0.0                  0.0                  0.0  0.9999999999999998Γ
+D = 
+ 0.9999999999999998                 0.0                 0.0                 0.0
+                0.0  0.9999999999999998                 0.0                 0.0
+                0.0                 0.0  0.9999999999999998                 0.0
+                0.0                 0.0                 0.0  0.9999999999999998
+
+Continuous-time state-space model</code></pre><h2 id="Coupling-constants-[Aspelmeyer*Kippenberg*Marquardt_2014](@cite)"><a class="docs-heading-anchor" href="#Coupling-constants-[Aspelmeyer*Kippenberg*Marquardt_2014](@cite)">Coupling constants [<a href="../../#Aspelmeyer_Kippenberg_Marquardt_2014">3</a>]</a><a id="Coupling-constants-[Aspelmeyer*Kippenberg*Marquardt_2014](@cite)-1"></a><a class="docs-heading-anchor-permalink" href="#Coupling-constants-[Aspelmeyer*Kippenberg*Marquardt_2014](@cite)" title="Permalink"></a></h2><p>Zero-point fluctuation length of the mechanical mode [m] Would like to calculate as: x<em>zpf = zpf</em>length(mech_sub, numeric.parameters) but numeric is not defined yet, this is a bit of a circular requirement</p><pre><code class="language-julia hljs">x_zpf = sqrt(ℏ / (2 * m_mirror * Ω_mech))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2.9114916655167097e-16</code></pre><p>Single-photon optomechanical coupling [rad/s]   g₀ = (ω<em>L / L) · x</em>zpf</p><pre><code class="language-julia hljs">g_OM = (ω_l / (L_arm)) * x_zpf</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.0001290202000375755</code></pre><p>Stored intracavity photon number (dimensionless)   n̄<em>cav = P</em>circ · (2L/c) / (ℏ·ω_l) The (2L/c) round-trip time converts circulating photon <em>flux</em> [1/s] into the population actually resonating inside the cavity.</p><pre><code class="language-julia hljs">N_bar = P_circ * (2 * L_arm / c_phys) / (ℏ * ω_l)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0706616214135605e20</code></pre><p>Linearized optomechanical coupling [rad/s]   g = g₀·√n̄  (used as the coefficient of (a+a†)(b+b†) in H)</p><pre><code class="language-julia hljs">g_optomech = g_OM * sqrt(N_bar) #eq 30 of aspelmeyer
+
+println(&quot;=== Parameters ===&quot;)
+println(&quot;Ω/(2π)    = $(round(Ω_mech / (2π), digits = 2)) Hz  (mechanical pendulum resonance )&quot;)
+println(&quot;g_OM/(2π) = $(round(g_OM / (2π), sigdigits = 3)) Hz  (single-photon coupling)&quot;)
+println(&quot;N̄         = $(round(N_bar, sigdigits = 3)) photons&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">=== Parameters ===
+Ω/(2π)    = 0.0 Hz  (mechanical pendulum resonance )
+g_OM/(2π) = 2.05e-5 Hz  (single-photon coupling)
+N̄         = 1.07e20 photons</code></pre><h2 id="Numerical-substitution"><a class="docs-heading-anchor" href="#Numerical-substitution">Numerical substitution</a><a id="Numerical-substitution-1"></a><a class="docs-heading-anchor-permalink" href="#Numerical-substitution" title="Permalink"></a></h2><pre><code class="language-julia hljs">paramdict = Dict(
+    ω =&gt; 0,              # cavity detuning
+    l =&gt; L_arm,
+    κ =&gt; κ_cavity,
+    Ω =&gt; Ω_mech,
+    m =&gt; m_mirror,
+    g =&gt; g_optomech,
+    Γ =&gt; mech_couple               # mechanical damping
+)
+
+numeric = substitute(qss, paramdict)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">QuantumStateSpace{ControlSystemsBase.Continuous, QuadratureBasis}
+A = 
+  -262.6467091364205      0.0 + 0.0im          0.0 + 0.0im                0.0 + 0.0im
+ 0.0 + 0.0im               -262.6467091364205      2.670015756455614e6    0.0 + 0.0im
+ 0.0 + 0.0im              0.0 + 0.0im             -4.999999999999998e-47      3.141592653589793e-5
+     2.670015756455614e6  0.0 + 0.0im             -3.141592653589793e-5      -4.999999999999998e-47
+B = 
+   -22.919280492040777  0.0 + 0.0im            0.0 + 0.0im                0.0 + 0.0im
+ 0.0 + 0.0im              -22.919280492040777  0.0 + 0.0im                0.0 + 0.0im
+ 0.0 + 0.0im            0.0 + 0.0im               -9.999999999999997e-24  0.0 + 0.0im
+ 0.0 + 0.0im            0.0 + 0.0im            0.0 + 0.0im                   -9.999999999999997e-24
+C = 
+    22.919280492040777  0.0 + 0.0im            0.0 + 0.0im                0.0 + 0.0im
+ 0.0 + 0.0im               22.919280492040777  0.0 + 0.0im                0.0 + 0.0im
+ 0.0 + 0.0im            0.0 + 0.0im                9.999999999999997e-24  0.0 + 0.0im
+ 0.0 + 0.0im            0.0 + 0.0im            0.0 + 0.0im                    9.999999999999997e-24
+D = 
+ 0.9999999999999998 + 0.0im                 0.0 + 0.0im                 0.0 + 0.0im                 0.0 + 0.0im
+                0.0 + 0.0im  0.9999999999999998 + 0.0im                 0.0 + 0.0im                 0.0 + 0.0im
+                0.0 + 0.0im                 0.0 + 0.0im  0.9999999999999998 + 0.0im                 0.0 + 0.0im
+                0.0 + 0.0im                 0.0 + 0.0im                 0.0 + 0.0im  0.9999999999999998 + 0.0im
+
+Continuous-time state-space model</code></pre><h2 id="Frequency-grid-(angular,-rad/s)"><a class="docs-heading-anchor" href="#Frequency-grid-(angular,-rad/s)">Frequency grid (angular, rad/s)</a><a id="Frequency-grid-(angular,-rad/s)-1"></a><a class="docs-heading-anchor-permalink" href="#Frequency-grid-(angular,-rad/s)" title="Permalink"></a></h2><pre><code class="language-julia hljs">freq_hz = collect(logrange(0.1, 20_000.0, 500))
+freq = 2π .* freq_hz;</code></pre><h2 id="output-noise-spectral-density"><a class="docs-heading-anchor" href="#output-noise-spectral-density">output noise spectral density</a><a id="output-noise-spectral-density-1"></a><a class="docs-heading-anchor-permalink" href="#output-noise-spectral-density" title="Permalink"></a></h2><pre><code class="language-julia hljs">G = freqresp(numeric, freq)
+
+sd = spectral_density(numeric, freq)
+
+
+fig = Figure()
+ax_tf = Axis(
+    fig[1, 1];
+    xscale = log10, yscale = log10,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;transfer functions (unitless)&quot;
+)
+
+for (ii, iname) in enumerate(sd.names)
+    for (jj, jname) in enumerate(sd.names)
+        lines!(ax_tf, freq_hz, abs.(G[ii, jj, :]), label = &quot;$iname, $jname&quot;)
+    end
+end
+fig[1, 2] = Legend(fig, ax_tf)
+
+
+ax_noise = Axis(
+    fig[2, 1];
+    xscale = log10, yscale = log10,
+    limits = (nothing, nothing, nothing, nothing),
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;spectral densities (quanta per root hertz)&quot;
+)
+
+for ii in sd.names
+    for jj in sd.names
+        lines!(ax_noise, freq_hz, abs.(sd[ii, jj]), label = &quot;$ii, $jj&quot;)
+    end
+end
+
+
+fig[2, 2] = Legend(fig, ax_noise)
+
+
+ax_sig = Axis(
+    fig[1, 3];
+    xscale = log10, yscale = log10,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;signal (light quanta per strain?)&quot;
+)
+
+ii = 2
+jj = 4
+
+sig = G[ii, jj, :] .* L_arm .* freq .^ 2 ./ (2 * sqrt(2) .* Ω_mech .* x_zpf .* mech_couple)
+
+lines!(ax_sig, freq_hz, abs.(sig), label = &quot;$(sd.names[ii]), $(sd.names[jj])&quot;)
+
+fig[1, 4] = Legend(fig, ax_sig)
+
+ax_strain = Axis(
+    fig[2, 3];
+    xscale = log10, yscale = log10,
+    xlabel = &quot;Frequency [Hz]&quot;,
+    title = &quot;Strain sensitivity&quot;
+)
+
+strainsense = sqrt.(real.(sd[&quot;l_out_p&quot;, &quot;l_out_p&quot;])) ./ abs.(sig)
+
+lines!(ax_strain, freq_hz, strainsense)
+
+fig</code></pre><img src="ac4e8f42.png" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../api/">« API</a><a class="docs-footer-nextpage" href="../cascadedcavities/">Cascadedcavities »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 13 August 2026 20:09">Thursday 13 August 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
