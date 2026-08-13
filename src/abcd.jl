@@ -1,37 +1,96 @@
 #= This file defines a type for the representation of linear systems
 =#
 
-struct StateSpace
-    name
-    subspaces
-    parameters
-    inputs
-    outputs
+using ControlSystems: AbstractStateSpace, Continuous
+import ControlSystems: system_name, input_names, output_names,
+                       ssdata, nstates, ninputs, noutputs, series, feedback
+
+abstract type BasisType end
+
+"""
+Ladder (creation/annihilation) operator basis.
+State vector ordered as (a₁, a₁†, a₂, a₂†, ...) after interlacing.
+ABCD matrices are complex-valued.
+"""
+struct LadderBasis <: BasisType end
+
+"""
+Quadrature (amplitude/phase) operator basis.
+State vector ordered as (X₁, P₁, X₂, P₂, ...).
+All modes use the same 1/√2 unitary transform from the ladder basis.
+For optical modes: X = (a+a†)/√2, P = i(a†-a)/√2.
+For mechanical modes: q = (b+b†)/√2, r = i(b†-b)/√2 (dimensionless, normalized
+consistently with optical quadratures; SI conversion via x_zpf, p_zpf).
+ABCD matrices are real-valued for physical systems; all entries in rad/s.
+"""
+struct QuadratureBasis <: BasisType end
+
+struct QuantumStateSpace{TE, TB<:BasisType} <: AbstractStateSpace{TE}
+    # SLH metadata
+    name        :: String
+    subspaces   :: Vector
+    parameters  :: Any
+    inputs      :: Vector{String}
+    outputs     :: Vector{String}
+    # ABCD matrices (Any-typed to support both Num and numeric)
     A
     B
     C
     D
+    # Required by AbstractStateSpace interface
+    timeevol    :: TE
+    basis       :: TB
+end
+
+system_name(sys::QuantumStateSpace)  = sys.name
+input_names(sys::QuantumStateSpace)  = sys.inputs
+output_names(sys::QuantumStateSpace) = sys.outputs
+
+# ── ControlSystems.jl interface ───────────────────────────────────────────────
+
+ssdata(sys::QuantumStateSpace)   = (sys.A, sys.B, sys.C, sys.D)
+nstates(sys::QuantumStateSpace)  = size(sys.A, 1)
+ninputs(sys::QuantumStateSpace)  = size(sys.B, 2)
+noutputs(sys::QuantumStateSpace) = size(sys.C, 1)
+
+const _COMPOSE_ERROR = """not implemented"""
+
+series(::QuantumStateSpace, ::QuantumStateSpace)   = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace)                      = error(_COMPOSE_ERROR)
+
+# Default: build in ladder basis then convert to quadrature
+function QuantumStateSpace(sys::SLH)
+    return toquadrature(_build_ladder_ss(sys))
+end
+
+function QuantumStateSpace(sys::SLH, ::LadderBasis)
+    return _build_ladder_ss(sys)
+end
+
+function QuantumStateSpace(sys::SLH, ::QuadratureBasis)
+    return QuantumStateSpace(sys)
 end
 
 #This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
-function StateSpace(sys::SLH)
+function _build_ladder_ss(sys::SLH)
 
     S = sys.S
     L = sys.L
     H = sys.H
     
     # First we need to ensure that this is a linear quantum system.
-    # This means is consists of bosonic modes with quadratic couplings
+    # This means it consists of bosonic modes with quadratic couplings.
     hilb = SecondQuantizedAlgebra.hilbert(H)
-    if hilb isa SecondQuantizedAlgebra.ProductSpace    
+    if hilb isa SecondQuantizedAlgebra.ProductSpace
         for subspace in hilb.spaces
             if !(subspace isa FockSpace)
-                return error("Hilbert space contains non-bosonic modes")
+                return error("QuantumStateSpace is defined only for linear-bosonic SLH systems; Hilbert space contains a non-FockSpace factor")
             end
         end
     else
         if !(hilb isa FockSpace)
-            return error("Hilbert space contains non-bosonic modes")
+            return error("QuantumStateSpace is defined only for linear-bosonic SLH systems; Hilbert space is not a FockSpace")
         end
     end
     
@@ -165,8 +224,8 @@ function StateSpace(sys::SLH)
     D = Symbolics.simplify.(D)
     =#
 
-    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs,sys.outputs, A,B,C,D)
-    
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
+
 end
 
 function J(n::Int)
@@ -250,39 +309,49 @@ function state_vector(H)
 end
 
 #Does not substitute operators
-function Symbolics.substitute(sys::StateSpace, dict)
+function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))
     newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
     newC = Symbolics.value.(Symbolics.substitute.(sys.C, [dict]))
     newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
     params = sys.parameters
     newparams = Dict([(key,dict[params[key]]) for key in keys(params)])
-    return StateSpace(sys.name, sys.subspaces, newparams,sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return QuantumStateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
 end
 
-function toquadrature(sys::StateSpace)
+toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where TE = sys
 
-    blockpairs = [quadratureblocks(sys,mode) for mode in sys.subspaces]
+# Matrix products can nest a complex-valued Num inside a Complex{Num}, which
+# Symbolics.expand chokes on (unwrap tries to build a Complex{Real}). Folding the
+# imaginary unit back into a single symbolic expression makes it expandable.
+flattencomplex(z::Complex) = Symbolics.wrap(Symbolics.unwrap(real(z)) + im*Symbolics.unwrap(imag(z)))
+flattencomplex(z) = z
+
+expandsimplify(z) = simplify(expand(flattencomplex(z)))
+
+function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where TE
+
+    blockpairs = [quadrature_transform(mode, Dict()) for mode in sys.subspaces]
 
     left = cat([blockpair[1] for blockpair in blockpairs]...;dims=(1,2))
     right = cat([blockpair[2] for blockpair in blockpairs]...;dims=(1,2))
-    
+
     oldA = sys.A
-    oldB = sys.B 
-    oldC = sys.C 
+    oldB = sys.B
+    oldC = sys.C
     oldD = sys.D
 
     n_ports = length(sys.inputs)
 
-    blockpairsIO = [quadratureblocks(sys,GenericMode("")) for ii in 1:n_ports]
+    blockpairsIO = [quadrature_transform(GenericMode(""), Dict()) for ii in 1:n_ports]
     leftIO = cat([blockpair[1] for blockpair in blockpairsIO]...;dims=(1,2))
     rightIO = cat([blockpair[2] for blockpair in blockpairsIO]...;dims=(1,2))
 
-    newA = simplify.(expand.(left*oldA*right))
-    newB = simplify.(expand.(left*oldB*rightIO))
-    newC = simplify.(expand.(leftIO*oldC*right))
-    newD = simplify.(expand.(leftIO*oldD*rightIO))
+    newA = expandsimplify.(left*oldA*right)
+    newB = expandsimplify.(left*oldB*rightIO)
+    newC = expandsimplify.(leftIO*oldC*right)
+    newD = expandsimplify.(leftIO*oldD*rightIO)
 
-    return StateSpace(sys.name, sys.subspaces,sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD)
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
 end
 

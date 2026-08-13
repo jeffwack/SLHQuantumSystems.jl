@@ -2,45 +2,78 @@
 # has a vector of subspaces which are in one-to-one correspondence with the 'spaces' of a SecondQuantizedAlgebra.ProductSpace. Each Subspace type provides
 # the names of the parameters associated with the corresponding Hilbert space. =#
 
+using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
+
 abstract type Subspace end
 
-function promote_name(mode::Subspace,parentname)
-    newname = parentname*"_"*mode.name
-    typeof(mode).name.wrapper(newname)
+function promote_name(mode::Subspace, parentname)
+    newname = parentname * "_" * mode.name
+    return typeof(mode).name.wrapper(newname)
 end
+
+"""
+    param_key(mode::Subspace, base::Symbol) → Symbol
+
+Return the parameter dict key for `base` in the context of `mode`.
+For an unnamed mode (`mode.name == ""`), returns `base` directly.
+For a named mode, returns `Symbol(mode.name, "_", base)`.
+
+This is the single source of truth for parameter naming: all functions
+that look up mode parameters should use this rather than positional indexing.
+"""
+param_key(mode::Subspace, base::Symbol) =
+    mode.name == "" ? base : Symbol(mode.name, "_", base)
 
 struct MechanicalMode <: Subspace
     name::String
 end
 
 function parameternames(subsys::MechanicalMode)
-    if subsys.name == ""
-        return [:Ω,:m,:Γ]
-    else
-        fsymb = Symbol(subsys.name,"_",:Ω)
-        msymb = Symbol(subsys.name,"_",:m)
-        gsymb = Symbol(subsys.name,"_",:Γ)
-        return [fsymb,msymb,gsymb]
-    end
+    bases = [:Ω, :m, :Γ]
+    return [param_key(subsys, b) for b in bases]
 end
 
 function operatornames(subsys::MechanicalMode)
     return [:b]
 end
 
-function quadratureblocks(sys, subsys::MechanicalMode)
-    params = parameternames(subsys)
-    
-    m_name = params[2]
-    m = sys.parameters[m_name]
+quadrature_parameter_names(subsys::MechanicalMode) = Symbol[]
 
-    w_name = params[1]
-    w = sys.parameters[w_name]
+function quadrature_transform(subsys::MechanicalMode, params::Dict)
+    c = 1 / sqrt(Num(2))
+    left = c * [1 1; -im im]
+    right = c * [1 im; 1 -im]
+    return (left, right)
+end
 
-    left = [0.5 0.5; -0.5im*m*w 0.5im*m*w]
-    right = [1 im/(m*w); 1 -im/(m*w)]
+"""
+Zero-point fluctuation amplitude [m].
+x_zpf = √(ℏ / (2 m Ω))
+"""
+function zpf_length(subsys::MechanicalMode, params::Dict)
+    m = params[param_key(subsys, :m)]
+    Ω = params[param_key(subsys, :Ω)]
+    return sqrt(ℏ_SI.val / (2 * m * Ω))
+end
 
-    return (left,right)
+"""Zero-point fluctuation momentum [kg⋅m/s]."""
+function zpf_momentum(subsys::MechanicalMode, params::Dict)
+    m = params[param_key(subsys, :m)]
+    Ω = params[param_key(subsys, :Ω)]
+    return sqrt(ℏ_SI.val * m * Ω / 2)
+end
+
+"""
+    quadrature_scale(subsys::MechanicalMode, params) → [x_zpf, p_zpf]
+
+SI conversion factors for the mechanical quadrature state vector.
+The dimensionless quadrature states relate to physical quantities as:
+  x_phys = √2 · x_zpf · q
+  p_phys = √2 · p_zpf · r
+where q = (b+b†)/√2 and r = i(b†-b)/√2 are the SLH quadrature coordinates.
+"""
+function quadrature_scale(subsys::MechanicalMode, params::Dict)
+    return [zpf_length(subsys, params), zpf_momentum(subsys, params)]
 end
 
 
@@ -49,30 +82,43 @@ struct OpticalMode <: Subspace
 end
 
 function parameternames(subsys::OpticalMode)
-    if subsys.name == ""
-        return [:ω,:l,:κ]
-    else
-        fsymb = Symbol(subsys.name,"_",:ω)
-        msymb = Symbol(subsys.name,"_",:l)
-        gsymb = Symbol(subsys.name,"_",:κ)
-        return [fsymb,msymb,gsymb]
-    end
+    bases = [:κ, :Δ, :ω, :l]
+    return [param_key(subsys, b) for b in bases]
 end
 
 function operatornames(subsys::OpticalMode)
     return [:a]
 end
 
-function quadratureblocks(sys, subsys::OpticalMode)
-    left = 1/sqrt(2)*[1 1; -im im]
-    right = 1/sqrt(2)*[1 im; 1 -im]
-    return (left, right) 
+quadrature_parameter_names(subsys::OpticalMode) = Symbol[]
+
+function quadrature_transform(subsys::OpticalMode, params::Dict)
+    c = 1 / sqrt(Num(2))
+    left = c * [1 1; -im im]
+    right = c * [1 im; 1 -im]
+    return (left, right)
 end
+
+quadrature_scale(subsys::OpticalMode, params::Dict) = [1.0, 1.0]
+
 
 struct GenericMode <: Subspace
     name::String
 end
 
-function quadratureblocks(sys,subsys::GenericMode)
-    return quadratureblocks(sys,OpticalMode(""))
+function parameternames(subsys::GenericMode)
+    return [param_key(subsys, :ω)]
 end
+
+function operatornames(subsys::GenericMode)
+    return [:a]
+end
+
+quadrature_parameter_names(subsys::GenericMode) = Symbol[]
+
+quadrature_transform(subsys::GenericMode, params::Dict) = quadrature_transform(OpticalMode(""), params)
+
+quadrature_scale(subsys::GenericMode, params::Dict) = [1.0, 1.0]
+
+
+quadrature_transform(subsys::Subspace) = quadrature_transform(subsys, Dict())

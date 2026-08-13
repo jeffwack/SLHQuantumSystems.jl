@@ -6,4 +6,4 @@ FCV = cavity("B")
 SYS1 = concatenate([SQZ,FCV],"sys")
 SYS2 = feedbackreduce(SYS1,"A_out","B_in")
 
-SS = StateSpace(SYS2)
+SS = QuantumStateSpace(SYS2)

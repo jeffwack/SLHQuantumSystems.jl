@@ -18,8 +18,10 @@ size(H) = ()
 The two ways of combining SLH systems are concatenate() and feedbackreduce()
 """
 struct SLH
-    name::String 
+    name::String
     subspaces::Vector{Subspace}
+    # Flat by design: `concatenate` promotes names (e.g. `arm_ITM_T`) to keep
+    # keys unique, but the dict itself has no nested structure
     parameters #:: #Set{SymbolicUtils.BasicSymbolic}
     operators #:: #Set{SecondQuantizedAlgebra.QNumber}
     inputs::Vector{String} #must have unique elements

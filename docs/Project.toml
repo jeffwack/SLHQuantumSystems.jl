@@ -1,9 +1,10 @@
 [deps]
+ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
-LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
+PhysicalConstants = "5ad8b20f-a522-5ce9-bfc9-ddf1d5bda6ab"
 QuantumOptics = "6e0679c1-51ea-5a7c-ac74-d61b76210b0c"
 SLHQuantumSystems = "a0b4ee4f-8fee-4001-b7c2-b2f55611dd49"
 SecondQuantizedAlgebra = "f7aa4685-e143-4cb6-a7f3-073579757907"

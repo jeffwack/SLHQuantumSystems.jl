@@ -10,7 +10,7 @@ Extract all quantum operators from an expression.
 - `expr`: A symbolic expression
 
 # Returns
-- `Set`: Set of quantum operators found in the expression
+- Set of quantum operators found in the expression
 
 """
 function get_qnumbers(expr)
@@ -30,7 +30,7 @@ Extract all symbolic parameters from an expression.
 - `expr`: A symbolic expression
 
 # Returns
-- `Set`: Set of symbolic parameters found in the expression
+- Set of symbolic parameters found in the expression
 
 """
 function get_cnumbers(expr)
@@ -44,17 +44,17 @@ end
 """
     get_additive_terms(expr)
 
-Extract additive terms from a quantum operator expression.
+Extract additive terms from a symbolic expression.
 
-Takes an expression containing quantum operators and returns a list of terms
+Takes a symbolic expression and returns a list of terms
 that contain no addition, only multiplication. Summing all returned terms
 results in the original expression.
 
 # Arguments
-- `expr`: A symbolic expression containing quantum operators
+- `expr`: A symbolic expression
 
 # Returns
-- `Vector`: List of terms without addition operators
+- Vector of terms
 
 """
 function get_additive_terms(expr)

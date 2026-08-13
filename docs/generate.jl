@@ -4,6 +4,9 @@ using Documenter, Literate
 LITERATE_INPUT = joinpath(@__DIR__, "..", "examples")
 LITERATE_OUTPUT = joinpath(@__DIR__, "src", "generated")
 
+# Clear stale output so examples deleted from examples/ don't linger as pages
+rm(LITERATE_OUTPUT; recursive=true, force=true)
+
 # Process literate files
 generated_pages = []
 for (root, _, files) ∈ walkdir(LITERATE_INPUT), file ∈ files

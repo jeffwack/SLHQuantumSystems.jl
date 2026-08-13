@@ -16,17 +16,15 @@ and one output port with direct transmission (S=1).
 - `Δ`: Cavity detuning from driving field
 """
 function cavity(name)
-    #Define the filter cavity 
     hilb = FockSpace(:cavity)
-    a = Destroy(hilb,:a)
-
-    mode = OpticalMode("")
-
-    @variables κ Δ L  
-
-    paramdict = Dict(zip(nameof.([κ,Δ,L]), [κ,Δ,L]))
-    opdict = Dict(zip(getfield.([a],:name),[a]))
-      
+    a = Destroy(hilb, :a)
+    mode = OpticalMode(name)
+    pnames = parameternames(mode)
+    pvars  = [Symbolics.variable(n) for n in pnames]
+    paramdict = Dict(zip(pnames, pvars))
+    κ_sym = paramdict[param_key(mode, :κ)]
+    Δ_sym = paramdict[param_key(mode, :Δ)]
+    opdict = Dict(:a => a)
     return SLH(name,
                 [mode],
                 paramdict,
@@ -34,8 +32,8 @@ function cavity(name)
                 ["in"],
                 ["out"],
                 [1],
-                [κ*a],
-                Δ*adjoint(a)*a)
+                [κ_sym * a],
+                Δ_sym * adjoint(a) * a)
 end
 
 """

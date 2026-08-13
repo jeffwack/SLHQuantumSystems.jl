@@ -11,28 +11,28 @@ include("examples/cascadedcavities.jl")
 
 ## Overview of SLH systems
 
-The SLH framework represents each open quantum systems with three components:
+The SLH framework represents each open quantum systems by a triple containing:
 - **S**: Scattering matrix describing direct input-output coupling of external
   (bath) modes
-- **L**: Coupling vector describing the interaction of the internal modes with
-  the external modes 
-- **H**: System Hamiltonian describing internal dynamics
+- **L**: Coupling vector describing the interaction of internal modes with
+  external modes 
+- **H**: Hamiltonian describing internal dynamics
 
 
 ## Scope of this package
-SLHQuantumSystems.jl allows users to create large quantum systems by composing smaller, named systems into a single SLH 'block' with a hiearchy of named inputs, outputs, sytem operators, and parameters.
-This pakage depends on SecondQuantizedAlgebra.jl to provide quantum operators, their commutation relations and algebraic manipulation.
-We also use Symbolics.jl to provide symbols for the system parameters, which are real or complex constants.
+
+SLHQuantumSystems.jl is for:
+
+- Creating SLH triples `(S, L, H)` with symbolic parameters (Symbolics.jl)
+  and quantum operators (SecondQuantizedAlgebra.jl).
+- Composing named SLH 'blocks' via `concatenate` and `feedbackreduce`. Input,
+  output, operator, and parameter names are promoted during composition.
+- Converting linear-bosonic SLH systems to state-space form
+  `QuantumStateSpace <: ControlSystems.AbstractStateSpace`.
 
 ### Component Library
-The SLH framework enables you to create complicated quantum systems by combining
-simple, reusable components
-- Pre-built quantum components including:
-  - Basic cavities
-  - Squeezing cavities  
-  - Radiation pressure cavities
-  - Jaynes-Cummings QED cavity
 
+A small set of reusable components ([`cavity`](@ref), [`squeezing_cavity`](@ref)). 
 
 ## Dependencies
 
