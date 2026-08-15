@@ -1,6 +1,5 @@
-#= This file defines the Subspace type. This type's role is analogus to that of the ConcreteHilbertSpace in SecondQuantizedAlgebra.jl, and each SLH system
-# has a vector of subspaces which are in one-to-one correspondence with the 'spaces' of a SecondQuantizedAlgebra.ProductSpace. Each Subspace type provides
-# the names of the parameters associated with the corresponding Hilbert space. =#
+# This file defines the Subspace type. 
+# Each SLH system has a vector of subspaces which provides the names of the parameters associated with the corresponding Hilbert space.
 
 using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
 
@@ -9,6 +8,12 @@ abstract type Subspace end
 function promote_name(mode::Subspace, parentname)
     newname = parentname * "_" * mode.name
     return typeof(mode).name.wrapper(newname)
+end
+
+function promote_name(parameter, parentname)
+    old_sym = nameof(parameter)
+    new_sym = Symbol(parentname,"_",old_sym)
+    return Symbolics.variable(new_sym)
 end
 
 """
@@ -119,6 +124,5 @@ quadrature_parameter_names(subsys::GenericMode) = Symbol[]
 quadrature_transform(subsys::GenericMode, params::Dict) = quadrature_transform(OpticalMode(""), params)
 
 quadrature_scale(subsys::GenericMode, params::Dict) = [1.0, 1.0]
-
 
 quadrature_transform(subsys::Subspace) = quadrature_transform(subsys, Dict())

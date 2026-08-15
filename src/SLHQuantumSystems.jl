@@ -6,10 +6,8 @@ using LinearAlgebra
 using Symbolics
 import Symbolics.substitute #defined for QuantumStateSpace in abcd.jl
 
-include("qsymbols.jl")
-export get_qnumbers, get_cnumbers, get_additive_terms, islinear, ordered_qsymbols, coeff, promote_name
-
 include("subspace.jl")
+export promote_name
 export parameternames, operatornames, OpticalMode, MechanicalMode, GenericMode
 export quadrature_parameter_names, quadrature_transform, quadrature_scale
 export zpf_length, zpf_momentum

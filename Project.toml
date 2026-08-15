@@ -1,7 +1,7 @@
 name = "SLHQuantumSystems"
 uuid = "a0b4ee4f-8fee-4001-b7c2-b2f55611dd49"
 version = "0.13.0"
-authors = ["Jeffrey Wack <jeffwack111@gmail.com> and contributors"]
+authors = ["Jeffrey Wack <jwack@caltech.edu> and contributors"]
 
 [deps]
 ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
@@ -15,7 +15,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 ControlSystems = "1"
 LinearAlgebra = "1.11.0"
 PhysicalConstants = "0.2.4"
-SecondQuantizedAlgebra = "0.3.1,0.4"
+SecondQuantizedAlgebra = "0.10"
 SymbolicUtils = "3.29.0, 4"
 Symbolics = "6.45.0, 7"
 julia = "1.11.5"

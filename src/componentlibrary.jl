@@ -63,7 +63,7 @@ function squeezing_cavity(name)
 
     @variables κ ϵ
     
-    opdict = Dict(zip(getfield.([a],:name),[a]))
+    opdict = Dict(zip(operator_name.([a]),[a]))
 
     return SLH(name,
                 [mode],
