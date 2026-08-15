@@ -6,7 +6,11 @@ using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
 abstract type Subspace end
 
 function promote_name(mode::Subspace, parentname)
-    newname = parentname * "_" * mode.name
+    if mode.name == ""
+        newname = parentname
+    else
+        newname = parentname * "_" * mode.name
+    end
     return typeof(mode).name.wrapper(newname)
 end
 

@@ -29,7 +29,6 @@ struct QuantumStateSpace{TE, TB <: BasisType} <: AbstractStateSpace{TE}
     # SLH metadata
     name::String
     subspaces::Vector
-    parameters::Any
     inputs::Vector{String}
     outputs::Vector{String}
     # ABCD matrices (Any-typed to support both Num and numeric)
@@ -175,7 +174,7 @@ function _build_ladder_ss(sys::SLH)
     D = Symbolics.simplify.(D)
     =#
 
-    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
 
 end
 
@@ -267,9 +266,7 @@ function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
     newC = Symbolics.value.(Symbolics.substitute.(sys.C, [dict]))
     newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
-    params = sys.parameters
-    newparams = Dict([(key, dict[params[key]]) for key in keys(params)])
-    return QuantumStateSpace(sys.name, sys.subspaces, newparams, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
 end
 
 toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where {TE} = sys
@@ -305,5 +302,5 @@ function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where {TE}
     newC = expandsimplify.(leftIO * oldC * right)
     newD = expandsimplify.(leftIO * oldD * rightIO)
 
-    return QuantumStateSpace(sys.name, sys.subspaces, sys.parameters, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
 end

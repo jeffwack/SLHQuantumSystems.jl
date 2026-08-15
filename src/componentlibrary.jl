@@ -18,7 +18,7 @@ and one output port with direct transmission (S=1).
 function cavity(name)
     hilb = FockSpace(:cavity)
     a = Destroy(hilb, :a)
-    mode = OpticalMode(name)
+    mode = OpticalMode("")
     pnames = parameternames(mode)
     pvars  = [Symbolics.variable(n) for n in pnames]
     paramdict = Dict(zip(pnames, pvars))
@@ -27,8 +27,6 @@ function cavity(name)
     opdict = Dict(:a => a)
     return SLH(name,
                 [mode],
-                paramdict,
-                opdict,
                 ["in"],
                 ["out"],
                 [1],
@@ -67,8 +65,6 @@ function squeezing_cavity(name)
 
     return SLH(name,
                 [mode],
-                Dict(zip(nameof.([κ,ϵ]),[κ,ϵ])),
-                opdict,
                 ["in"],
                 ["out"],
                 [1],
