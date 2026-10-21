@@ -71,7 +71,15 @@ function QuantumStateSpace(sys::SLH, ::QuadratureBasis)
     return QuantumStateSpace(sys)
 end
 
-#This uses the Combes method of calculating Phi and Omega (rather than directly calculating the equations of motion)
+"""
+    _build_ladder_ss(sys::SLH) → QuantumStateSpace{Continuous, LadderBasis}
+
+Build the ladder-basis ABCD matrices of a linear SLH system, following Combes eqs. 116-119.
+H and L are parsed term by term into
+
+    H = a†Ω₋a + ½(a†Ω₊a†ᵀ + h.c.)        L = Φ₋a + Φ₊a†ᵀ
+
+"""
 function _build_ladder_ss(sys::SLH)
 
     S = sys.S

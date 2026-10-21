@@ -20,18 +20,20 @@ function cavity(name)
     a = Destroy(hilb, :a)
     mode = OpticalMode("")
     pnames = parameternames(mode)
-    pvars  = [Symbolics.variable(n) for n in pnames]
+    pvars = [Symbolics.variable(n) for n in pnames]
     paramdict = Dict(zip(pnames, pvars))
     κ_sym = paramdict[param_key(mode, :κ)]
     Δ_sym = paramdict[param_key(mode, :Δ)]
     opdict = Dict(:a => a)
-    return SLH(name,
-                [mode],
-                ["in"],
-                ["out"],
-                [1],
-                [κ_sym * a],
-                Δ_sym * adjoint(a) * a)
+    return SLH(
+        name,
+        [mode],
+        ["in"],
+        ["out"],
+        [1],
+        [sqrt(κ_sym) * a],
+        Δ_sym * adjoint(a) * a
+    )
 end
 
 """
@@ -54,20 +56,22 @@ interaction (two-mode squeezing Hamiltonian).
 """
 function squeezing_cavity(name)
     hilb = FockSpace(:squeezer)
-    
+
     mode = GenericMode("")
-    
+
     a = Destroy(hilb, :a)
 
     @variables κ ϵ
-    
-    opdict = Dict(zip(operator_name.([a]),[a]))
 
-    return SLH(name,
-                [mode],
-                ["in"],
-                ["out"],
-                [1],
-                [κ*a],
-                1im*ϵ*(adjoint(a)^2- a^2))
+    opdict = Dict(zip(operator_name.([a]), [a]))
+
+    return SLH(
+        name,
+        [mode],
+        ["in"],
+        ["out"],
+        [1],
+        [κ * a],
+        1im * ϵ * (adjoint(a)^2 - a^2)
+    )
 end

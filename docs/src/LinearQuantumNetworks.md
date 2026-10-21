@@ -1,10 +1,10 @@
 # Linear Quantum Networks
 
-Linear quantum systems are open quantum systems that consist of harmonic
+Linear quantum systems are open quantum systems that consist of
 bosonic modes with quadratic Hamiltonians and linear couplings to external
 fields. They are extensively studied in quantum optics, where they can describe
 systems of optical resonators, beamsplitters, and quadratic optical
-nonlinearity such as two-mode squeezing.
+nonlinearity such as squeezing.
 
 ## ABCD (state space)
 
@@ -43,7 +43,6 @@ Now, the full equations of motion can be written as
 
 ## Quadrature Operator Basis
 
-### Optical Modes
 We can also represent the state of the system using quadrature operators,
 defined by the relations:
 
@@ -84,10 +83,10 @@ p_m(t)
 \frac{1}{\sqrt{2}}
 \begin{pmatrix}
 1 & 1 & \cdots & 0 & 0 \\
-i & -i & \cdots & 0 & 0 \\
+-i & i & \cdots & 0 & 0 \\
 \vdots & \vdots & \ddots & \vdots & \vdots \\
 0 & 0 & \cdots & 1 & 1 \\
-0 & 0 & \cdots & i & -i
+0 & 0 & \cdots & -i & i
 \end{pmatrix}
 \begin{bmatrix}
 a_1(t) \\
@@ -110,24 +109,49 @@ The full equations of motion in the quadrature basis are
 \end{align*}
 ```
 
-### Mechanical Modes
-The operators ``x`` and ``p`` have different units for mechanical systems compared to optical quadratures, and thus the transformation from annihilation and creation operators
-to quadratures takes a slightly different form.
+## Conventions
+
+### Decay rates
+
+A mode that decays into a channel with energy decay rate ``\kappa`` has coupling
+operator
 
 ```math
-\begin{bmatrix}
-x \\ p
-\end{bmatrix}
-=
-\frac{1}{\sqrt{2m\omega}}
-\begin{pmatrix}
-1 & 1 \\
--i m \omega & i m \omega
-\end{pmatrix}
-\begin{bmatrix}
-a \\ a^\dagger
-\end{bmatrix}
-``` 
+L = \sqrt{\kappa}\, a ,
+```
+
+a Fabry–Perot cavity of length ``\ell`` with input-mirror power transmission
+``T \ll 1``, ``\kappa = Tc/(2\ell)``.
+
+With these conventions, a degenerate parametric amplifier
+``H = \frac{i}{2}\epsilon(a^{\dagger 2} - a^2)``, ``L = \sqrt{\kappa}\,a`` has quadrature
+drift matrix ``A = \mathrm{diag}(\epsilon - \kappa/2,\, -\epsilon - \kappa/2)`` and
+reaches threshold at ``\epsilon = \kappa/2``, matching Collett and Gardiner
+[Collett_Gardiner_1984](@cite).
+
+### Units and vacuum normalisation
+
+We set ``\hbar = 1``. All rates and frequencies, and therefore all entries of the
+``A`` matrix, are in rad/s.
+
+Quadratures are dimensionless and use the same ``1/\sqrt{2}`` transform for
+every mode type, optical or mechanical. Physical units enter through the
+zero-point fluctuation amplitudes (`quadrature_scale`):
+
+```math
+x_\mathrm{phys} = \sqrt{2}\, x_\mathrm{zpf}\, x,
+\qquad
+x_\mathrm{zpf} = \sqrt{\frac{\hbar}{2 m \Omega}} .
+```
+
+The vacuum state has variance ``\frac{1}{2}`` in each quadrature, so the default
+input noise in [`spectral_density`](@ref) is ``\frac{1}{2} I``.
+
+### Frequency responses
+
+Transfer functions are evaluated at ``s = i\omega`` with ``\omega`` in rad/s, as in
+ControlSystems.jl.
+
 
 ## Named Inputs and Outputs
 
