@@ -13,14 +13,6 @@ concatenate
 feedbackreduce
 ```
 
-## Symbolic Utilities
-
-```@docs
-get_qnumbers
-get_cnumbers
-get_additive_terms
-```
-
 ## Subspaces and Mode Parameters
 
 ```@docs
