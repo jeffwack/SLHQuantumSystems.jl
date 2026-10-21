@@ -239,27 +239,6 @@ function makedriftA(H,L,x)
 end
 =#
 
-function stateidx(op)
-    if op isa Destroy || op isa Position
-        return 2 * op.aon - 1
-    elseif op isa Create || op isa Momentum
-        return 2 * op.aon
-    else
-        return error("Can't assign index to non-bosonic operator")
-    end
-end
-
-function state_vector(H)
-    hilb = SecondQuantizedAlgebra.hilbert(H)
-
-    ops = collect(get_qnumbers(H))
-
-    # we want to order the operators based on the order of their hilbert spaces
-    # in the product space, that is by aon
-    x = sort(ops, by = stateidx)
-    return x
-end
-
 #Does not substitute operators
 function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))

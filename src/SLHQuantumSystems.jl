@@ -17,7 +17,7 @@ include("slh.jl")
 export SLH, concatenate, feedbackreduce
 
 include("abcd.jl")
-export state_vector, eqsofmotion, toquadrature, QuantumStateSpace
+export eqsofmotion, toquadrature, QuantumStateSpace
 export LadderBasis, QuadratureBasis
 export ssdata, nstates, ninputs, noutputs
 
