@@ -249,11 +249,23 @@ end
 
 #Does not substitute operators
 function Symbolics.substitute(sys::QuantumStateSpace, dict)
-    newA = Symbolics.value.(Symbolics.substitute.(sys.A, [dict]))
-    newB = Symbolics.value.(Symbolics.substitute.(sys.B, [dict]))
-    newC = Symbolics.value.(Symbolics.substitute.(sys.C, [dict]))
-    newD = Symbolics.value.(Symbolics.substitute.(sys.D, [dict]))
+    newA = substitute_matrix(sys.A, dict)
+    newB = substitute_matrix(sys.B, dict)
+    newC = substitute_matrix(sys.C, dict)
+    newD = substitute_matrix(sys.D, dict)
     return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
+end
+
+# fold = Val(true) evaluates constant subexpressions such as sqrt(0.3); Symbolics 7 leaves them
+# symbolic by default. A fully numeric result is narrowed from Matrix{Number} to a concrete
+# eltype, which numerics downstream (e.g. lu inside freqresp) require. Partially symbolic
+# results are returned as they are.
+function substitute_matrix(M, dict)
+    newM = Symbolics.value.(Symbolics.substitute.(M, [dict]; fold = Val(true)))
+    if all(x -> x isa Number && !(x isa Num) && !(x isa Complex{Num}), newM)
+        return all(x -> iszero(imag(x)), newM) ? Float64.(real.(newM)) : ComplexF64.(newM)
+    end
+    return newM
 end
 
 toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where {TE} = sys
