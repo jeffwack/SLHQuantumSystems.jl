@@ -25,14 +25,33 @@ struct SLH
     S #size nxn
     L #size n
     H #has operators which act on hilbert
+
+    #Coerce all operators to type QAdd, which can be iterated as (term,coeff) pairs
+    function SLH(name, subspaces, inputs, outputs, S, L, H)
+        L = [Lj isa SecondQuantizedAlgebra.Op ? 1 * Lj : Lj for Lj in L]
+        H = H isa SecondQuantizedAlgebra.Op ? 1 * H : H
+
+        # every operator must act on a declared subspace
+        m = length(subspaces)
+        for q in [L; H]
+            q isa SecondQuantizedAlgebra.QAdd || continue
+            for k in acts_on(q)
+                if !(1 <= k <= m)
+                    return error("$name: an operator acts on hilbert space $k, but only $m subspaces are declared")
+                end
+            end
+        end
+
+        return new(name, subspaces, inputs, outputs, S, L, H)
+    end
 end
 
 #This constructor automatically makes all the modes 'generic' and names the inputs and outputs in1, in2,... out1, out2...
-function SLH(name,S,L,H)
-    
-    n = maximum(acts_on(sum(L)+H))
+function SLH(name, S, L, H)
 
-    subspaces = fill(GenericMode(""),n)
+    n = maximum(acts_on(sum(L) + H))
+
+    subspaces = fill(GenericMode(""), n)
 
     m = length(L)
     if m == 1
@@ -43,30 +62,30 @@ function SLH(name,S,L,H)
         outputs = ["out$j" for j in 1:m]
     end
 
-    return SLH(name,subspaces,inputs,outputs,S,L,H)
-     
+    return SLH(name, subspaces, inputs, outputs, S, L, H)
+
 end
-    
+
 #This function is for SecondQuantizedAlgebra operators
-function promote_op(op,aon_offset, topname)
-    
-    new_op_name = Symbol(topname,"_",operator_name(op))
-    
+function promote_op(op, aon_offset, topname)
+
+    new_op_name = Symbol(topname, "_", operator_name(op))
+
     subspaceindex = aon_offset + only(acts_on(op))
 
-    return SecondQuantizedAlgebra.set_acts_on(SecondQuantizedAlgebra.rename(op,new_op_name),subspaceindex)
+    return SecondQuantizedAlgebra.set_acts_on(SecondQuantizedAlgebra.rename(op, new_op_name), subspaceindex)
 end
 
-function promote_expr(q,topname,offset)
+function promote_expr(q, topname, offset)
     acc = 0
-    for (term,coeff) in q
+    for (term, coeff) in q
         cnums = SecondQuantizedAlgebra.to_num(coeff)
-        replace_rules = Dict([v => promote_name(v,topname) for v in Symbolics.get_variables(cnums)])
-        c = substitute(cnums,replace_rules)
+        replace_rules = Dict([v => promote_name(v, topname) for v in Symbolics.get_variables(cnums)])
+        c = substitute(cnums, replace_rules)
         if isempty(term.ops)
             acc += c
         else
-            acc += c*prod(promote_op(op,offset,topname) for op in term.ops)
+            acc += c * prod(promote_op(op, offset, topname) for op in term.ops)
         end
     end
     return acc
@@ -82,31 +101,31 @@ parameters, and Hilbert spaces are 'promoted' by prepending the name of the
 system to the existing name. This prevents name collisions as long as all 
 SLHSystems are created with a unique name.
 """
-function concatenate(syslist,name) #Should this be changed to concatenate(name, systems...) ?
+function concatenate(syslist, name) #Should this be changed to concatenate(name, systems...) ?
 
     ####
     # Subspaces
-    newsubspaces = vcat([[promote_name(subsys,sys.name) for subsys in sys.subspaces] for sys in syslist]...)
+    newsubspaces = vcat([[promote_name(subsys, sys.name) for subsys in sys.subspaces] for sys in syslist]...)
     ###
-    
+
     #We 'stack' the inputs and outputs of the systems we are combining.
     #first, we promote the names of inputs and outputs, to prevent naming collisions
-    newinputs = [[sys.name*"_"*input for input in sys.inputs] for sys in syslist]
-    inputs = cat(newinputs...,dims = 1)
+    newinputs = [[sys.name * "_" * input for input in sys.inputs] for sys in syslist]
+    inputs = cat(newinputs..., dims = 1)
 
-    newoutputs = [[sys.name*"_"*output for output in sys.outputs] for sys in syslist]
-    outputs = cat(newoutputs...,dims = 1)
-    
-    offsets = cumsum([0; [length(sys.subspaces) for sys in syslist[1:(end-1)]]])
-   
+    newoutputs = [[sys.name * "_" * output for output in sys.outputs] for sys in syslist]
+    outputs = cat(newoutputs..., dims = 1)
+
+    offsets = cumsum([0; [length(sys.subspaces) for sys in syslist[1:(end - 1)]]])
+
     #we concatenate all the scattering matrices block diagonally
-    S = cat([sys.S for sys in syslist]...;dims=(1,2))
+    S = cat([sys.S for sys in syslist]...; dims = (1, 2))
 
-    L = vcat([[promote_expr(Lj,sys.name,off) for Lj in sys.L] for (sys,off) in zip(syslist,offsets)]...)
+    L = vcat([[promote_expr(Lj, sys.name, off) for Lj in sys.L] for (sys, off) in zip(syslist, offsets)]...)
 
-    H = sum([promote_expr(sys.H,sys.name,off) for (sys,off) in zip(syslist,offsets)])
+    H = sum([promote_expr(sys.H, sys.name, off) for (sys, off) in zip(syslist, offsets)])
 
-    return SLH(name,newsubspaces,inputs,outputs,S,L,H)
+    return SLH(name, newsubspaces, inputs, outputs, S, L, H)
 end
 
 """
@@ -114,9 +133,9 @@ feedbackreduce(A::SLH,output,input)
 
 Connects the output port to the input port, reducing the number of outputs and inputs by one each. Combes eq 61.
 """
-function feedbackreduce(A,output, input)
+function feedbackreduce(A, output, input)
 
-    x = findfirst(isequal(output),A.outputs)
+    x = findfirst(isequal(output), A.outputs)
     y = findfirst(isequal(input), A.inputs)
 
     newoutputs = A.outputs[eachindex(A.outputs) .!= x]
@@ -125,28 +144,28 @@ function feedbackreduce(A,output, input)
     Sxbarybar = A.S[1:end .!= x, 1:end .!= y]
     Sxbary = A.S[1:end .!= x, y]
     Sxybar = permutedims(A.S[x, 1:end .!= y])
-    Sxy = A.S[x,y]
+    Sxy = A.S[x, y]
 
-    Sy = A.S[:,y]
+    Sy = A.S[:, y]
 
     Lxbar = A.L[1:end .!= x]
     Lx = A.L[x]
 
-    S = Sxbarybar + Sxbary*(1-Sxy)^(-1)*Sxybar
+    S = Sxbarybar + Sxbary * (1 - Sxy)^(-1) * Sxybar
     #Have to use fill here because the usual broadcast syntax on operator does not work
-    L = Lxbar +  Sxbary .* fill(((1-Sxy)^(-1)*Lx),size(Sxbary))
+    L = Lxbar + Sxbary .* fill(((1 - Sxy)^(-1) * Lx), size(Sxbary))
 
-    term1 = adjoint(A.L)*Sy
-    term2 = (1-Sxy)^(-1)
+    term1 = adjoint(A.L) * Sy
+    term2 = (1 - Sxy)^(-1)
     term3 = Lx
     termA = adjoint(Lx)
-    termB = ((1-adjoint(Sxy))^(-1))
-    termC = (adjoint(Sy)*A.L)
+    termB = ((1 - adjoint(Sxy))^(-1))
+    termC = (adjoint(Sy) * A.L)
 
-    Hprime = 1/(2im)*(term1*term2*term3-termA*termB*termC)
+    Hprime = 1 / (2im) * (term1 * term2 * term3 - termA * termB * termC)
 
     #return (A.H, Hprime)
     H = simplify(A.H + Hprime)
 
-    return SLH(A.name,A.subspaces,newinputs,newoutputs,S,L,H)
+    return SLH(A.name, A.subspaces, newinputs, newoutputs, S, L, H)
 end

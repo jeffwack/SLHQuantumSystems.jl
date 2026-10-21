@@ -85,8 +85,8 @@ function _build_ladder_ss(sys::SLH)
     omegaplus = Array{Any}(zeros(m, m))
 
     #Each element of args is a vector of symbols/numbers corresponding to one additive term
-    for (term,coeff) in H
-        
+    for (term, coeff) in H
+
         ops = term.ops
 
         if isempty(ops)
@@ -94,23 +94,29 @@ function _build_ladder_ss(sys::SLH)
             continue
         end
 
-        if length(ops)!=2
+        if length(ops) != 2
             return error("$ops term of the Hamiltonian is not quadratic")
         end
 
+        for op in ops
+            if !(is_create(op) || is_destroy(op))
+                return error("$op (acts_on $(only(acts_on(op)))) in the Hamiltonian is not a creation or annihilation operator")
+            end
+        end
+
         c = SecondQuantizedAlgebra.to_num(coeff)
-        creators = filter(is_create,ops)
+        creators = filter(is_create, ops)
 
         if length(creators) == 1
             j = only(acts_on(only(creators)))
-            k = only(acts_on(only(filter(is_destroy,ops))))
+            k = only(acts_on(only(filter(is_destroy, ops))))
             omegaminus[j, k] += c
-        elseif length(creators) == 2 
+        elseif length(creators) == 2
             j = only(acts_on(creators[1]))
             k = only(acts_on(creators[2]))
             omegaplus[j, k] += c
             omegaplus[k, j] += c
-        elseif length(creators) == 0 
+        elseif length(creators) == 0
             #If H is Hermitian then this is already handled
         else
             return error("don't know how to handle $term")
@@ -123,7 +129,7 @@ function _build_ladder_ss(sys::SLH)
     phiplus = Array{Any}(zeros(n, m))
 
     for (j, channel) in enumerate(L)
-        for (term,coeff) in channel
+        for (term, coeff) in channel
             ops = term.ops
             if length(ops) != 1
                 return error("$term of L is not linear")
@@ -133,8 +139,10 @@ function _build_ladder_ss(sys::SLH)
             k = only(acts_on(op))
             if is_destroy(op)
                 phiminus[j, k] += c
-            else
+            elseif is_create(op)
                 phiplus[j, k] += c
+            else
+                return error("$op in L[$j] is not a creation or annihilation operator; the ladder basis requires Fock operators")
             end
         end
     end
