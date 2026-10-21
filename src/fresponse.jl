@@ -30,7 +30,7 @@ function fresponse_state2output(sys::QuantumStateSpace, freqs::AbstractVector{<:
     B_pick = zeros(ComplexF64, n, 1)
     B_pick[from, 1] = 1
     D_zero = zeros(ComplexF64, noutputs(sys), 1)
-    dummy = QuantumStateSpace(sys.name, sys.subspaces, sys.parameters,
+    dummy = QuantumStateSpace(sys.name, sys.subspaces,
                               ["state_$from"], sys.outputs,
                               sys.A, B_pick, sys.C, D_zero,
                               sys.timeevol, sys.basis)

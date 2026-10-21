@@ -40,12 +40,11 @@ H = Ω * b' * b - g * (b' + b) * (a' + a)
 L_ops = [κ * a, Γ * b]
 S_mat = [1 0; 0 1]
 
-pdict = Dict(zip(nameof.([ω, l, κ, Ω, m, Γ, g]), [ω, l, κ, Ω, m, Γ, g]))
-opdict = Dict(zip(getfield.([a, b], :name), [a, b]))
-
 slh = SLH(
-    "opto", subspaces, pdict, opdict,
-    ["l_in", "m_in"], ["l_out", "m_out"], S_mat, L_ops, H
+    "opto", subspaces,
+    ["l_in", "m_in"], 
+    ["l_out", "m_out"], 
+    S_mat, L_ops, H
 )
 
 qss = toquadrature(QuantumStateSpace(slh))
