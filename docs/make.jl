@@ -27,7 +27,10 @@ makedocs(;
         "Literate Workflow" => "literate-workflow.md",
     ],
     workdir=joinpath(@__DIR__, ".."),
-    plugins=[bib]
+    plugins=[bib],
+    checkdocs=:exports,
+    # Set ENV["DOCS_DRAFT"] = "true" to skip running @example blocks (fast local previews)
+    draft=get(ENV, "DOCS_DRAFT", "false") == "true",
 )
 
 deploydocs(;
