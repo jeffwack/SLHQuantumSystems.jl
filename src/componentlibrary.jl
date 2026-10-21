@@ -3,17 +3,17 @@
 
 Create a basic optical cavity SLH system.
 
-Creates a single-mode cavity with detuning and decay. The cavity has one input 
-and one output port with direct transmission (S=1).
+Creates a single-mode, single-sided cavity with detuning and decay.
 
 # Arguments
-- `name`: Symbol identifying the cavity (used for operator and parameter naming)
+- `name`: String used for operator and parameter naming
 
 # Returns
-- `SLH`: System with Hamiltonian H = Δ·a†a and coupling L = [κa]
+- `SLH`: System with Hamiltonian H = Δ·a†a and coupling L = [√κ·a]
 # Parameters
-- `κ`: Cavity decay rate
-- `Δ`: Cavity detuning from driving field
+- `κ`: Energy decay rate [rad/s]
+- `Δ`: Cavity detuning [rad/s]
+
 """
 function cavity(name)
     hilb = FockSpace(:cavity)
@@ -41,18 +41,18 @@ end
 
 Create a squeezing cavity SLH system.
 
-Creates a cavity that generates squeezed light through a parametric 
-interaction (two-mode squeezing Hamiltonian).
+Creates a degenerate parametric amplifier: a single-mode cavity that generates squeezed
+light.
 
 # Arguments
-- `name`: Symbol identifying the cavity (used for operator and parameter naming)
+- `name`:  String used for operator and parameter naming
 
-# Returns  
-- `SLH`: System with squeezing Hamiltonian H = iϵ(a†² - a²) and coupling L = [κ·a]
+# Returns
+- `SLH`: System with Hamiltonian H = (i/2)·ϵ·(a†² - a²) and coupling L = [√κ·a]
 
 # Parameters
-- `κ`: Cavity decay rate
-- `ϵ`: Squeezing strength 
+- `κ`: Energy decay rate [rad/s]
+- `ϵ`: Pump parameter [rad/s]. 
 """
 function squeezing_cavity(name)
     hilb = FockSpace(:squeezer)
@@ -71,7 +71,7 @@ function squeezing_cavity(name)
         ["in"],
         ["out"],
         [1],
-        [κ * a],
-        1im * ϵ * (adjoint(a)^2 - a^2)
+        [sqrt(κ) * a],
+        (1im / 2) * ϵ * (adjoint(a)^2 - a^2)
     )
 end

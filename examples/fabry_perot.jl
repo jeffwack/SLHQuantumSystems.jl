@@ -12,30 +12,26 @@ a = Destroy(hilb, :a)
 
 @variables ω κ
 
-cav = SLH("cav", [1], [κ * a], ω * a' * a)
+cav = SLH("cav", [1], [sqrt(κ) * a], ω * a' * a)
 
-cavSS = QuantumStateSpace(cav)
+cavSS = QuantumStateSpace(cav) # quadrature basis by default
 
-quadcavSS = toquadrature(cavSS)
-
-# ## Calculation of coupling rate
+# ## Calculation of the decay rate
 
 T = 0.00001
 L = 400; #meters
 
 # The round-trip travel time of the cavity is 2L/c.
-# T is the probability of photon leaving the cavity after one round-trip,
-# thus the amplitude coupling rate is
+# T is the probability of a photon leaving the cavity after one round-trip,
+# thus the energy decay rate is
 
-κ_num = T * c.val / (4 * L)
+κ_num = T * c.val / (2 * L)
 
 # ## Numeric substitution
 
 paramdict = Dict([ω => 1 * 2π, κ => κ_num])
 
-numcav = substitute(quadcavSS, paramdict)
-
-numeric = toquadrature(numcav)
+numeric = substitute(cavSS, paramdict)
 
 # ## Frequency grid
 

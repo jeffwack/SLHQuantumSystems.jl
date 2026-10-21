@@ -9,15 +9,15 @@ mode = MechanicalMode("")
 @variables Ω m Γ
 b = Destroy(FockSpace(:mass), operatornames(mode)[1])
 
-slh = SLH("mass", [mode], ["in"], ["out"], [1], [Γ * b], Ω * b' * b)
+slh = SLH("mass", [mode], ["in"], ["out"], [1], [sqrt(Γ) * b], Ω * b' * b)
 
 ss = QuantumStateSpace(slh)
 qss = toquadrature(ss)
 
 paramdict = Dict(
-    Ω => 10, #10Hz resonance
+    Ω => 10 * 2 * π, # resonance [rad/s]
     m => 4, #kg
-    Γ => 1.0e-23
+    Γ => 1.0e-46 # damping rate [rad/s]; the port coupling is √Γ = 1e-23
 )
 
 numeric = substitute(qss, paramdict)

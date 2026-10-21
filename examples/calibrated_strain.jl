@@ -15,7 +15,7 @@ c_phys = c_SI.val                          # m/s
 
 L_arm = 3995.0                            # m  (arm cavity length)
 T_ITM = 0.014                             # power transmittance of ITM
-κ_cavity = sqrt(T_ITM * c_phys / (2 * L_arm))       # amplitude decay rate [rad/s]
+κ_cavity = T_ITM * c_phys / (2 * L_arm)       # energy decay rate (FWHM linewidth) [rad/s]
 
 P_circ = 750.0e3                             # W  (circulating power)
 m_mirror = 39.6 / 2                            # kg
@@ -37,13 +37,13 @@ b = Destroy(hilb, operatornames(mech_sub)[1], 2)
 @variables ω l κ Ω m Γ g
 
 H = Ω * b' * b - g * (b' + b) * (a' + a)
-L_ops = [κ * a, Γ * b]
+L_ops = [sqrt(κ) * a, sqrt(Γ) * b]
 S_mat = [1 0; 0 1]
 
 slh = SLH(
     "opto", subspaces,
-    ["l_in", "m_in"], 
-    ["l_out", "m_out"], 
+    ["l_in", "m_in"],
+    ["l_out", "m_out"],
     S_mat, L_ops, H
 )
 
@@ -85,7 +85,7 @@ paramdict = Dict(
     Ω => Ω_mech,
     m => m_mirror,
     g => g_optomech,
-    Γ => mech_couple               # mechanical damping
+    Γ => mech_couple
 )
 
 numeric = substitute(qss, paramdict)

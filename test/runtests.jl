@@ -121,6 +121,11 @@ using ControlSystems
         # At threshold the squeezed quadrature goes to zero noise as ω → 0
         thr = substitute(QuantumStateSpace(sqz), Dict(κ => κ0, ϵ => κ0 / 2))
         @test real(spectral_density(thr, [1.0e-3])["out_p", "out_p"][1]) < 1.0e-5
+
+        # The component library follows the same convention
+        lib = substitute(QuantumStateSpace(squeezing_cavity("A")), Dict(κ => κ0, ϵ => ϵ0))
+        @test lib.A ≈ qss.A
+        @test lib.B ≈ qss.B && lib.C ≈ qss.C
     end
 
     @testset "two-mode squeezing convention" begin
