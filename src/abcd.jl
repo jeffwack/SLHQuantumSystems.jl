@@ -137,10 +137,18 @@ function _build_ladder_ss(sys::SLH)
     phiplus = Array{Any}(zeros(n, m))
 
     for (j, channel) in enumerate(L)
+        # a c-number L[j] (no operators at all) is not a QAdd
+        if !(channel isa SecondQuantizedAlgebra.QAdd)
+            isequal(channel, 0) && continue
+            return error("L[$j] = $channel is a constant (a coherent drive), which the linear ABCD model cannot represent")
+        end
         for (term, coeff) in channel
             ops = term.ops
+            if isempty(ops)
+                return error("L[$j] contains a constant term $(SecondQuantizedAlgebra.to_num(coeff)) (a coherent drive), which the linear ABCD model cannot represent")
+            end
             if length(ops) != 1
-                return error("$term of L is not linear")
+                return error("$ops term of L[$j] is not linear")
             end
             op = only(ops)
             c = SecondQuantizedAlgebra.to_num(coeff)

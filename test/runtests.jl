@@ -70,6 +70,15 @@ using ControlSystems
         @test all(iszero, qss.B[3:4, :])
         @test all(iszero, qss.C[:, 3:4])
 
+        # A constant in L is a coherent drive, which the linear model rejects; a zero constant is fine
+        @variables β
+        @test_throws ErrorException QuantumStateSpace(SLH("drive", [1], [β + κ * a], ω * a' * a), LadderBasis())
+        @test_throws ErrorException QuantumStateSpace(
+            SLH("drive", [GenericMode("")], ["i1", "i2"], ["o1", "o2"], [1 0; 0 1], [κ * a, β], ω * a' * a),
+            LadderBasis()
+        )
+        @test isa(QuantumStateSpace(SLH("nodrive", [1], [0 + κ * a], ω * a' * a), LadderBasis()), QuantumStateSpace)
+
         # A bare operator is coerced to an iterable QAdd
         bare = SLH("t", [1], [a], ω * a' * a)
         @test all(Lj -> Lj isa SecondQuantizedAlgebra.QAdd, bare.L)
