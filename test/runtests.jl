@@ -187,9 +187,21 @@ using ControlSystems
             QuantumStateSpace(concatenate([bs], "top"), LadderBasis()),
             Dict(bs_g => g0, bs_κ => κ0)
         ).A
-        # ḃ = -ig c and ċ = -ig* b
+        # ḃ = -ig c and ċ = -ig* b, and the rows for b† and c† carry the conjugates
         @test direct[1, 3] ≈ -im * g0 && direct[3, 1] ≈ -im * conj(g0)
+        @test direct[2, 4] ≈ im * conj(g0) && direct[4, 2] ≈ im * g0
         @test viaconcat ≈ direct
+
+        # The quadrature A of a physical system is real: ẋ_b = Im(g) x_c + Re(g) p_c, ...
+        quad = substitute(QuantumStateSpace(bs), Dict(g => g0, κ => κ0)).A
+        @test eltype(quad) == Float64
+        gr, gi = real(g0), imag(g0)
+        @test quad ≈ [
+            -κ0/2 0 gi gr;
+            0 -κ0/2 -gr gi;
+            -gi gr -κ0/2 0;
+            -gr -gi 0 -κ0/2
+        ]
     end
 
     @testset "two-mode squeezing convention" begin

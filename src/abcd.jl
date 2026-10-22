@@ -294,6 +294,12 @@ toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where {TE} = sys
 flattencomplex(z::Complex) = Symbolics.wrap(Symbolics.unwrap(real(z)) + im * Symbolics.unwrap(imag(z)))
 flattencomplex(z) = z
 
+# Type piracy: Base's conj(::Complex) assumes both parts are real, and Symbolics defines
+# conj(::Num) = x. SQA's to_num puts complex (::Number) parameters inside a part of a
+# Complex{Num}, so conj silently dropped them. Remove once SQA/Symbolics handle this.
+conjpart(x::Num) = Symbolics.symtype(Symbolics.unwrap(x)) <: Real ? x : Num(conj(Symbolics.unwrap(x)))
+Base.conj(z::Complex{Num}) = Complex(conjpart(real(z)), -conjpart(imag(z)))
+
 expandsimplify(z) = simplify(expand(flattencomplex(z)))
 
 function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where {TE}
