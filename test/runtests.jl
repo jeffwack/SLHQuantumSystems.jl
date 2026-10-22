@@ -137,6 +137,28 @@ using ControlSystems
         @test lib.B ≈ qss.B && lib.C ≈ qss.C
     end
 
+    @testset "coefficient accumulation (C1)" begin
+        hf = FockSpace(:cavity)
+        @qnumbers a::Destroy(hf)
+        @variables ω κ m
+        κ0, ω0, m0 = 0.3, 0.7, 4.0
+        vals = Dict(κ => κ0, ω => ω0, m => m0)
+
+        # ω(a†a + aa†) = 2ω a†a + ω: the like terms merge and the constant is dropped
+        sys = SLH("r3", [1], [sqrt(κ) * a], ω * (a' * a + a * a'))
+        @test substitute(QuantumStateSpace(sys, LadderBasis()), vals).A ≈ diagm([-2im * ω0 - κ0 / 2, 2im * ω0 - κ0 / 2])
+
+        # A free mass written in ladder operators: H = p²/2m has a†a, a†², a² and constant
+        # terms, which must combine to ẋ = p/m, ṗ = 0 (it came out as a spring before C1)
+        p = 1im * (a' - a) / sqrt(2)
+        sys = SLH("mass", [1], [sqrt(κ) * a], p * p / (2m))
+        @test substitute(QuantumStateSpace(sys), vals).A ≈ [-κ0/2 1/m0; 0 -κ0/2]
+
+        # L = √κ a + √κ a couples with strength 2√κ
+        sys = SLH("r5", [1], [sqrt(κ) * a + sqrt(κ) * a], ω * a' * a)
+        @test substitute(QuantumStateSpace(sys, LadderBasis()), vals).C ≈ 2 * sqrt(κ0) * I(2)
+    end
+
     @testset "complex parameters" begin
         hf = FockSpace(:cavity)
         @qnumbers a::Destroy(hf)
