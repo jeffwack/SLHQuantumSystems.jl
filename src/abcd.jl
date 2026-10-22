@@ -269,7 +269,9 @@ end
 # eltype, which numerics downstream (e.g. lu inside freqresp) require. Partially symbolic
 # results are returned as they are.
 function substitute_matrix(M, dict)
-    newM = Symbolics.value.(Symbolics.substitute.(M, [dict]; fold = Val(true)))
+    # flattencomplex: a complex (::Number) parameter can sit inside a part of a Complex{Num}
+    # entry, and substituting a complex value into a part breaks complex(re, im)
+    newM = Symbolics.value.(Symbolics.substitute.(flattencomplex.(M), [dict]; fold = Val(true)))
     if all(x -> x isa Number && !(x isa Num) && !(x isa Complex{Num}), newM)
         return all(x -> iszero(imag(x)), newM) ? Float64.(real.(newM)) : ComplexF64.(newM)
     end

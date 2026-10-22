@@ -128,6 +128,39 @@ using ControlSystems
         @test lib.B ≈ qss.B && lib.C ≈ qss.C
     end
 
+    @testset "complex parameters" begin
+        hf = FockSpace(:cavity)
+        @qnumbers a::Destroy(hf)
+        @variables η::Number ω κ
+
+        # concatenate keeps a complex parameter complex, so conj survives and H stays Hermitian
+        drive = SLH("d", [1], [sqrt(κ) * a], η * a' + conj(η) * a + ω * a' * a)
+        promoted = concatenate([drive], "top")
+        @variables d_η::Number
+        @test any(v -> isequal(v, d_η), Symbolics.get_variables(promoted.H))
+        @test isequal(promoted.H, promoted.H')
+
+        # A complex beamsplitter coupling gives the same numeric A built directly or concatenated
+        hp = FockSpace(:one) ⊗ FockSpace(:two)
+        b = Destroy(hp, :b, 1)
+        c = Destroy(hp, :c, 2)
+        @variables g::Number
+        bs = SLH(
+            "bs", [GenericMode(""), GenericMode("")], ["i1", "i2"], ["o1", "o2"],
+            [1 0; 0 1], [sqrt(κ) * b, sqrt(κ) * c], g * b' * c + conj(g) * b * c'
+        )
+        g0, κ0 = 0.3 + 0.4im, 1.0
+        direct = substitute(QuantumStateSpace(bs, LadderBasis()), Dict(g => g0, κ => κ0)).A
+        @variables bs_g::Number bs_κ
+        viaconcat = substitute(
+            QuantumStateSpace(concatenate([bs], "top"), LadderBasis()),
+            Dict(bs_g => g0, bs_κ => κ0)
+        ).A
+        # ḃ = -ig c and ċ = -ig* b
+        @test direct[1, 3] ≈ -im * g0 && direct[3, 1] ≈ -im * conj(g0)
+        @test viaconcat ≈ direct
+    end
+
     @testset "two-mode squeezing convention" begin
         # Control case for the ½: an off-diagonal a†b† term is handled correctly
         hp = FockSpace(:one) ⊗ FockSpace(:two)

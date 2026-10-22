@@ -14,10 +14,11 @@ function promote_name(mode::Subspace, parentname)
     return typeof(mode).name.wrapper(newname)
 end
 
+#rename keeps the symtype and metadata, so a complex (::Number) parameter stays complex
 function promote_name(parameter, parentname)
     old_sym = nameof(parameter)
     new_sym = Symbol(parentname,"_",old_sym)
-    return Symbolics.variable(new_sym)
+    return Symbolics.rename(parameter, new_sym)
 end
 
 """

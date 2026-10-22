@@ -76,19 +76,16 @@ function promote_op(op, aon_offset, topname)
     return SecondQuantizedAlgebra.set_acts_on(SecondQuantizedAlgebra.rename(op, new_op_name), subspaceindex)
 end
 
+#SQA's substitute applies all rules simultaneously and once, so shifting modes 1→2 and 2→3
+#in the same expression cannot chain, and conj(η) is promoted along with η
 function promote_expr(q, topname, offset)
-    acc = 0
-    for (term, coeff) in q
-        cnums = SecondQuantizedAlgebra.to_num(coeff)
-        replace_rules = Dict([v => promote_name(v, topname) for v in Symbolics.get_variables(cnums)])
-        c = substitute(cnums, replace_rules)
-        if isempty(term.ops)
-            acc += c
-        else
-            acc += c * prod(promote_op(op, offset, topname) for op in term.ops)
-        end
+    scalar_rules = Dict{Any, Any}(v => promote_name(v, topname) for v in Symbolics.get_variables(q))
+    if !(q isa SecondQuantizedAlgebra.QAdd)
+        return substitute(q, scalar_rules)
     end
-    return acc
+    ops = unique(op for (term, _) in q for op in term.ops)
+    op_rules = Dict{Any, Any}(op => promote_op(op, offset, topname) for op in ops)
+    return substitute(q, merge(op_rules, scalar_rules))
 end
 
 """
