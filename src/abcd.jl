@@ -21,6 +21,7 @@ All modes use the same 1/√2 unitary transform from the ladder basis.
 For optical modes: X = (a+a†)/√2, P = i(a†-a)/√2.
 For mechanical modes: q = (b+b†)/√2, r = i(b†-b)/√2 (dimensionless, normalized
 consistently with optical quadratures; SI conversion via x_zpf, p_zpf).
+A mode written with `Position` and `Momentum` has states x and p, in the units of H.
 ABCD matrices are real-valued for physical systems; all entries in rad/s.
 """
 struct QuadratureBasis <: BasisType end
@@ -85,9 +86,9 @@ series(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
 feedback(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
 feedback(::QuantumStateSpace) = error(_COMPOSE_ERROR)
 
-# Default: build in ladder basis then convert to quadrature
+# Default: build in the quadrature basis, which accepts both ladder and position/momentum operators
 function QuantumStateSpace(sys::SLH)
-    return toquadrature(_build_ladder_ss(sys))
+    return _build_quadrature_ss(sys)
 end
 
 function QuantumStateSpace(sys::SLH, ::LadderBasis)
@@ -134,9 +135,7 @@ function _build_ladder_ss(sys::SLH)
         end
 
         for op in ops
-            if !(is_create(op) || is_destroy(op))
-                return error("$op (acts_on $(only(acts_on(op)))) in the Hamiltonian is not a creation or annihilation operator")
-            end
+            ladder_only(op, "the Hamiltonian")
         end
 
         c = SecondQuantizedAlgebra.to_num(coeff)
@@ -178,14 +177,13 @@ function _build_ladder_ss(sys::SLH)
                 return error("$ops term of L[$j] is not linear")
             end
             op = only(ops)
+            ladder_only(op, "L[$j]")
             c = SecondQuantizedAlgebra.to_num(coeff)
             k = only(acts_on(op))
             if is_destroy(op)
                 phiminus[j, k] += c
-            elseif is_create(op)
-                phiplus[j, k] += c
             else
-                return error("$op in L[$j] is not a creation or annihilation operator; the ladder basis requires Fock operators")
+                phiplus[j, k] += c
             end
         end
     end
@@ -227,6 +225,110 @@ function _build_ladder_ss(sys::SLH)
 
     return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
 
+end
+
+function ladder_only(op, where)
+    if is_position(op) || is_momentum(op)
+        return error("$op in $where is a position or momentum operator; the ladder basis needs a length scale to define a, so use the quadrature basis")
+    end
+    if !(is_create(op) || is_destroy(op))
+        return error("$op (acts_on $(only(acts_on(op)))) in $where is not a bosonic operator")
+    end
+end
+
+"""
+    _build_quadrature_ss(sys::SLH) → QuantumStateSpace{Continuous, QuadratureBasis}
+
+Build the quadrature-basis ABCD matrices of a linear SLH system, following Zhang et al.,
+Linear quantum systems: a tutorial (arXiv:2205.04080), section 2. The state is
+z = (x₁, p₁, x₂, p₂, …) with [z, zᵀ] = iΘ, and H and L are parsed into
+
+    H = ½ zᵀGz        L = Λz
+
+Ladder operators are read as a = (x + ip)/√2, so H and L may mix both kinds.
+"""
+function _build_quadrature_ss(sys::SLH)
+
+    m = length(sys.subspaces)
+    n = length(sys.L)
+    Θ(k) = kron(I(k), [0 1; -1 0])
+
+    G = Array{Any}(zeros(2m, 2m))
+    for (term, coeff) in sys.H
+        ops = term.ops
+        #cnumbers do not contribute to Heisenberg eqs
+        isempty(ops) && continue
+        if length(ops) != 2
+            return error("$ops term of the Hamiltonian is not quadratic")
+        end
+        v1 = quadrature_vector(ops[1], m, "the Hamiltonian")
+        v2 = quadrature_vector(ops[2], m, "the Hamiltonian")
+        M = SecondQuantizedAlgebra.to_num(coeff) * v1 * transpose(v2)
+        G += M + transpose(M)
+    end
+
+    Λ = Array{Any}(zeros(n, 2m))
+    for (j, channel) in enumerate(sys.L)
+        # a c-number L[j] (no operators at all) is not a QAdd
+        if !(channel isa SecondQuantizedAlgebra.QAdd)
+            isequal(channel, 0) && continue
+            return error("L[$j] = $channel is a constant (a coherent drive), which the linear ABCD model cannot represent")
+        end
+        for (term, coeff) in channel
+            ops = term.ops
+            if isempty(ops)
+                return error("L[$j] contains a constant term $(SecondQuantizedAlgebra.to_num(coeff)) (a coherent drive), which the linear ABCD model cannot represent")
+            end
+            if length(ops) != 1
+                return error("$ops term of L[$j] is not linear")
+            end
+            Λ[j, :] += SecondQuantizedAlgebra.to_num(coeff) * quadrature_vector(only(ops), m, "L[$j]")
+        end
+    end
+
+    # conj rather than real/imag, which drop complex parameters (see conjpart)
+    re(x) = (x + conj(x)) / 2
+    im_(x) = (x - conj(x)) / 2im
+
+    C = Array{Any}(zeros(2n, 2m))
+    D = Array{Any}(zeros(2n, 2n))
+    for k in 1:n
+        C[2k - 1, :] = sqrt(Num(2)) * re.(Λ[k, :])
+        C[2k, :] = sqrt(Num(2)) * im_.(Λ[k, :])
+        for l in 1:n
+            s = sys.S[k, l]
+            D[(2k - 1):2k, (2l - 1):2l] = [re(s) -im_(s); im_(s) re(s)]
+        end
+    end
+
+    # G, C and D are real; simplifying them first keeps the products below real
+    G, C, D = (expandsimplify.(X) for X in (G, C, D))
+
+    # C♯ = -Θ Cᵀ Θ, with C real
+    Csharp = -Θ(m) * transpose(C) * Θ(n)
+    A = expandsimplify.(Θ(m) * G - Csharp * C / 2)
+    B = expandsimplify.(-Csharp * D)
+
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, A, B, C, D, Continuous(), QuadratureBasis())
+end
+
+# An operator as a vector over z: x and p are unit vectors, and a = (x + ip)/√2
+function quadrature_vector(op, m, where)
+    v = Array{Any}(zeros(2m))
+    k = only(acts_on(op))
+    c = 1 / sqrt(Num(2))
+    if is_position(op)
+        v[2k - 1] = 1
+    elseif is_momentum(op)
+        v[2k] = 1
+    elseif is_destroy(op)
+        v[(2k - 1):2k] = [c, im * c]
+    elseif is_create(op)
+        v[(2k - 1):2k] = [c, -im * c]
+    else
+        return error("$op (acts_on $k) in $where is not a bosonic operator")
+    end
+    return v
 end
 
 function J(n::Int)

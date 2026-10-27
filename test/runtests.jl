@@ -241,6 +241,67 @@ using ControlSystems
         ]
     end
 
+    @testset "phase space" begin
+        # Commutators are preserved: AΘ + ΘAᵀ + BΘBᵀ = 0 (James, Nurdin & Petersen 2008, Theorem 2.1)
+        Θ(k) = kron(I(k), [0 1; -1 0])
+        realizable(q) = isapprox(q.A * Θ(nstates(q) ÷ 2) + Θ(nstates(q) ÷ 2) * q.A' + q.B * Θ(ninputs(q) ÷ 2) * q.B', zeros(nstates(q), nstates(q)); atol = 1.0e-12)
+
+        # The quadrature builder agrees with the ladder builder followed by toquadrature
+        hp = FockSpace(:one) ⊗ FockSpace(:two)
+        a, b = Destroy(hp, :a, 1), Destroy(hp, :b, 2)
+        @variables κ Δ ϵ ω g::Number A_κ A_Δ B_κ B_Δ
+        vals = Dict(κ => 0.3, Δ => 0.7, ϵ => 0.1, ω => 1.3, g => 0.3 + 0.4im, A_κ => 0.3, A_Δ => 0.7, B_κ => 0.5, B_Δ => -0.2)
+        systems = [
+            cavity("A"),
+            squeezing_cavity("A"),
+            feedbackreduce(concatenate([cavity("A"), cavity("B")], "S"), "A_out", "B_in"),
+            SLH("sqz", [1], [sqrt(κ) * a], (1im / 2) * ϵ * (a'^2 - a^2)),
+            SLH("tms", [1 0; 0 1], [sqrt(κ) * a, sqrt(κ) * b], 1im * ϵ * (a' * b' - a * b)),
+            SLH("bs", [1 0; 0 1], [sqrt(κ) * a, sqrt(κ) * b], g * a' * b + conj(g) * a * b'),
+            SLH("om", [1], [sqrt(κ) * a], ω * b' * b - ϵ * (b' + b) * (a' + a)),
+            SLH("scatter", [0.6 0.8im; 0.8im 0.6], [sqrt(κ) * a, sqrt(Δ) * a'], ω * a' * a),
+        ]
+        for sys in systems
+            direct = substitute(QuantumStateSpace(sys), vals)
+            vialadder = substitute(toquadrature(QuantumStateSpace(sys, LadderBasis())), vals)
+            @test all(ssdata(direct) .≈ ssdata(vialadder))
+            @test realizable(direct)
+        end
+
+        # The free mass H = p²/2m, L = iλx: x is read out, and the force kicks p
+        ps = PhaseSpace(:mass)
+        x, p = Position(ps, :x), Momentum(ps, :p)
+        @variables m λ
+        m0, λ0, Ω = 2.0, 0.7, [0.5, 3.0]
+        mass(ω0) = substitute(
+            QuantumStateSpace(SLH("mass", [MechanicalMode("")], ["in"], ["out"], [1], [1im * λ * x], p * p / (2m) + m * ω^2 * x * x / 2)),
+            Dict(m => m0, λ => λ0, ω => ω0)
+        )
+        free = mass(0.0)
+        @test free.A ≈ [0 1 / m0; 0 0]
+        @test realizable(free)
+        G = freqresp(free, Ω)
+        @test G[:, :, 1] ≈ [1 0; -2λ0^2 / (m0 * Ω[1]^2) 1]
+        @test G[2, 1, :] ≈ -2λ0^2 ./ (m0 .* Ω .^ 2)
+
+        # A harmonic potential moves the response smoothly away from the free mass
+        @test freqresp(mass(1.3), Ω)[2, 1, :] ≈ 2λ0^2 ./ (m0 .* (1.3^2 .- Ω .^ 2))
+
+        # Ladder and position/momentum operators mix within one system
+        hm = FockSpace(:cavity) ⊗ PhaseSpace(:mirror)
+        c, X, P = Destroy(hm, :a, 1), Position(hm, :x, 2), Momentum(hm, :p, 2)
+        om = SLH("om", [OpticalMode("cavity"), MechanicalMode("mirror")], ["in"], ["out"], [1], [sqrt(κ) * c], P * P / (2m) - ϵ * X * (c' + c))
+        q = substitute(QuantumStateSpace(om), Dict(κ => 0.3, ϵ => 0.1, m => m0))
+        @test state_names(q) == [:cavity_x, :cavity_p, :mirror_x, :mirror_p]
+        @test q.A ≈ [-0.15 0 0 0; 0 -0.15 sqrt(2) * 0.1 0; 0 0 0 1 / m0; sqrt(2) * 0.1 0 0 0]
+        @test realizable(q)
+
+        # Without a length scale there is no ladder basis; linear H and constant L are rejected
+        @test_throws ErrorException QuantumStateSpace(om, LadderBasis())
+        @test_throws ErrorException QuantumStateSpace(SLH("lin", [MechanicalMode("")], ["in"], ["out"], [1], [1im * λ * x], λ * x))
+        @test_throws ErrorException QuantumStateSpace(SLH("drive", [MechanicalMode("")], ["in"], ["out"], [1], [λ + 1im * λ * x], p * p / (2m)))
+    end
+
     @testset "two-mode squeezing convention" begin
         # Control case for the ½: an off-diagonal a†b† term is handled correctly
         hp = FockSpace(:one) ⊗ FockSpace(:two)
