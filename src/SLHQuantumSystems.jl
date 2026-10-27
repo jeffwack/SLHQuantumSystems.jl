@@ -20,9 +20,10 @@ include("abcd.jl")
 export eqsofmotion, toquadrature, QuantumStateSpace
 export LadderBasis, QuadratureBasis
 export ssdata, nstates, ninputs, noutputs
+export mode_names, state_names
 
 include("fresponse.jl")
-export fresponse_state2output, symbfresponse
+export TransferMatrix, transfer_matrix, symbfresponse
 
 include("componentlibrary.jl")
 export cavity, squeezing_cavity

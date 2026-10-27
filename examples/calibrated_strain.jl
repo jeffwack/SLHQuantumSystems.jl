@@ -1,3 +1,5 @@
+# # Strain sensitivity of a single-arm Fabry–Perot cavity
+
 using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
@@ -14,39 +16,38 @@ T_ITM = 0.014          # ITM power transmittance
 P_circ = 750.0e3       # circulating power [W]
 m = 39.6 / 2;          # reduced mass of the Michelson [kg]
 
-# The mirror is a free mass. `Ω_m` and `Γ_m` only regulate the model;
-# the result does not depend on them.
+# The mirror is a free mass. `Ω_m` only regulates the model;
+# the result does not depend on it.
 
-Ω_m = 2π * 5.0e-6      # mechanical resonance [rad/s]
-Γ_m = 1.0e-23;         # mechanical port coupling [rad/s]
+Ω_m = 2π * 5.0e-6;     # mechanical resonance [rad/s]
 
 # ## Model
 #
 # Cavity mode `a`, mirror mode `b`, linearized radiation-pressure coupling `g`:
 #
 # ```math
-# H = Ω b^†b - g (b + b^†)(a + a^†), \qquad L = [\sqrt{κ}\, a, \sqrt{Γ}\, b]
+# H = Ω b^†b - g (b + b^†)(a + a^†), \qquad L = [\sqrt{κ}\, a]
 # ```
 
 hilb = FockSpace(:cavity) ⊗ FockSpace(:mirror)
 a = Destroy(hilb, :a, 1)
 b = Destroy(hilb, :b, 2)
 
-@variables κ Ω Γ g
+@variables κ Ω g
 
 slh = SLH(
-    "arm", [OpticalMode(""), MechanicalMode("")],
-    ["l_in", "m_in"], ["l_out", "m_out"],
-    [1 0; 0 1], [sqrt(κ) * a, sqrt(Γ) * b],
+    "arm", [OpticalMode("cavity"), MechanicalMode("mirror")],
+    ["in"], ["out"],
+    [1], [sqrt(κ) * a],
     Ω * b' * b - g * (b' + b) * (a' + a)
 )
 
 qss = toquadrature(QuantumStateSpace(slh))
 
-# The drift matrix, state order `(x_a, p_a, x_b, p_b)`. Amplitude `x_a` pushes
-# the mirror (`p_b`); mirror position `x_b` shifts the phase `p_a`.
+# The drift matrix. Amplitude `cavity_x` pushes the mirror (`mirror_p`); mirror
+# position `mirror_x` shifts the phase `cavity_p`.
 
-qss.A
+state_names(qss), qss.A
 
 # ## Parameters
 
@@ -57,27 +58,25 @@ N = P_circ * (2 * L_arm / c) / (ħ * ω_l)   # intracavity photon number
 numeric = substitute(qss, Dict(
     κ => T_ITM * c / (2 * L_arm),          # FWHM linewidth
     Ω => Ω_m,
-    Γ => Γ_m,
     g => (ω_l / L_arm) * x_zpf * sqrt(N),  # g₀√N [Aspelmeyer_Kippenberg_Marquardt_2014](@cite)
 ))
 
 # ## Signal and noise
 #
-# Strain `h` acts on the mirror as a force `F = m ω² L h / 2`. A force enters
-# through the momentum quadrature of `m_in` as `p_in = √2 x_zpf F / (ħ √Γ)`.
+# Strain `h` acts on the mirror as a force `F = m ω² L h / 2`, which drives the
+# mirror momentum: `d(mirror_p)/dt = √2 x_zpf F / ħ`.
 
 f = logrange(1.0, 10_000.0, 400)
 ω = 2π .* f
 
-G = freqresp(numeric, ω)
-lx, lp, mp = 1, 2, 4   # quadrature channels: (l_x, l_p, m_x, m_p)
+T = transfer_matrix(numeric, ω)
 
-signal = G[lp, mp, :] .* sqrt(2) .* x_zpf .* (m .* ω .^ 2 .* L_arm ./ 2) ./ (ħ * sqrt(Γ_m))
+signal = T["out_p", :mirror_p] .* sqrt(2) .* x_zpf .* (m .* ω .^ 2 .* L_arm ./ 2) ./ ħ
 
-S_out = spectral_density(numeric, ω)["l_out_p", "l_out_p"]
+S_out = spectral_density(numeric, ω)["out_p", "out_p"]
 h_total = sqrt.(real.(S_out)) ./ abs.(signal)
-h_shot = sqrt.(abs2.(G[lp, lp, :]) ./ 2) ./ abs.(signal)
-h_rpn = sqrt.(abs2.(G[lp, lx, :]) ./ 2) ./ abs.(signal);
+h_shot = sqrt.(abs2.(T["out_p", "in_p"]) ./ 2) ./ abs.(signal)
+h_rpn = sqrt.(abs2.(T["out_p", "in_x"]) ./ 2) ./ abs.(signal);
 
 # ## Closed form
 #

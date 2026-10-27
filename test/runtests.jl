@@ -63,7 +63,7 @@ using ControlSystems
         @test_throws ErrorException SLH("bad", [GenericMode("")], ["in"], ["out"], [1], [κ * b], ω * b' * b)
 
         # A declared subspace that no operator touches is allowed, and is decoupled
-        sys = SLH("spare", [GenericMode(""), GenericMode("")], ["in"], ["out"], [1], [κ * a], ω * a' * a)
+        sys = SLH("spare", [GenericMode(""), GenericMode("spare")], ["in"], ["out"], [1], [κ * a], ω * a' * a)
         qss = QuantumStateSpace(sys, LadderBasis())
         @test size(qss.A) == (4, 4)
         @test all(iszero, qss.A[3:4, :]) && all(iszero, qss.A[:, 3:4])
@@ -104,7 +104,44 @@ using ControlSystems
         @test all(isconcretetype ∘ eltype, (qss.A, qss.B, qss.C, qss.D))
         partial = substitute(QuantumStateSpace(cavity("A")), Dict(κ => κ0))
         @test any(x -> !(x isa Number), partial.A)
-        @test length(SLHQuantumSystems.fresponse_state2output(qss, [0.1, 1.0], 1, 1)) == 2
+    end
+
+    @testset "names" begin
+        @variables κ Δ
+        κ0, Δ0 = 0.3, 0.7
+
+        # An unnamed mode takes the system's name on concatenate, as its ports do
+        @test mode_names(cavity("A")) == [""]
+        @test state_names(QuantumStateSpace(cavity("A"))) == [:x, :p]
+        @test state_names(QuantumStateSpace(cavity("A"), LadderBasis())) == [:a, :adag]
+        both = concatenate([cavity("A"), cavity("B")], "S")
+        @test mode_names(both) == ["A", "B"]
+        @test state_names(QuantumStateSpace(both)) == [:A_x, :A_p, :B_x, :B_p]
+
+        # Mode names must be unique, which catches concatenating two systems of the same name
+        @test_throws ErrorException concatenate([cavity("A"), cavity("A")], "S")
+        hp = FockSpace(:one) ⊗ FockSpace(:two)
+        b, c = Destroy(hp, :b, 1), Destroy(hp, :c, 2)
+        @test_throws ErrorException SLH("dup", [GenericMode(""), GenericMode("")], ["in"], ["out"], [1], [κ * b], Δ * c' * c)
+        @test mode_names(SLH("tms", [1 0; 0 1], [κ * b, κ * c], Δ * b' * c')) == ["mode1", "mode2"]
+
+        # Strings name ports and Symbols name states; a name without its suffix selects both entries
+        @variables A_κ A_Δ B_κ B_Δ
+        qss = substitute(QuantumStateSpace(both), Dict(A_κ => κ0, A_Δ => Δ0, B_κ => κ0, B_Δ => Δ0))
+        ω = [0.1, 1.0, 3.0]
+        T = transfer_matrix(qss, ω)
+        G = freqresp(qss, ω)
+        @test T["A_out_p", "A_in_x"] == G[2, 1, :]
+        @test T["A_out", "A_in"] == G[1:2, 1:2, :]
+        @test T[:A_x, "A_in_x"] ≈ [-sqrt(κ0) * (κ0 / 2 + im * w) / ((im * w + κ0 / 2)^2 + Δ0^2) for w in ω]
+        @test T["A_out_x", :A_x] ≈ sqrt(κ0) * T[:A_x, :A_x]
+        @test_throws ErrorException T[:A_out_p, :A_in_x]
+        @test_throws ErrorException T["A_ou", "A_in_x"]
+
+        # The state spectra of a vacuum-driven cavity
+        sd = spectral_density(qss, ω)
+        @test sd["A_out_p", "A_out_p"] ≈ G[2, 1, :] .* conj(G[2, 1, :]) / 2 + G[2, 2, :] .* conj(G[2, 2, :]) / 2
+        @test real(sd[:A_x, :A_x]) ≈ real(sd[:A_p, :A_p])
     end
 
     @testset "single-mode squeezing convention" begin
@@ -177,7 +214,7 @@ using ControlSystems
         c = Destroy(hp, :c, 2)
         @variables g::Number
         bs = SLH(
-            "bs", [GenericMode(""), GenericMode("")], ["i1", "i2"], ["o1", "o2"],
+            "bs", [GenericMode("b"), GenericMode("c")], ["i1", "i2"], ["o1", "o2"],
             [1 0; 0 1], [sqrt(κ) * b, sqrt(κ) * c], g * b' * c + conj(g) * b * c'
         )
         g0, κ0 = 0.3 + 0.4im, 1.0

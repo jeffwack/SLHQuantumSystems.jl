@@ -26,12 +26,15 @@ quadrature_scale
 ```@docs
 LadderBasis
 QuadratureBasis
+mode_names
+state_names
 ```
 
 ## Frequency Response
 
 ```@docs
-fresponse_state2output
+TransferMatrix
+transfer_matrix
 ```
 
 ## Spectral Densities

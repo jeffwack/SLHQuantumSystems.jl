@@ -2,7 +2,7 @@
 =#
 
 using ControlSystems: AbstractStateSpace, Continuous
-import ControlSystems: system_name, input_names, output_names,
+import ControlSystems: system_name, input_names, output_names, state_names,
     ssdata, nstates, ninputs, noutputs, series, feedback
 
 abstract type BasisType end
@@ -44,6 +44,33 @@ end
 system_name(sys::QuantumStateSpace) = sys.name
 input_names(sys::QuantumStateSpace) = sys.inputs
 output_names(sys::QuantumStateSpace) = sys.outputs
+
+# ── Names ─────────────────────────────────────────────────────────────────────
+# Ports are Strings and states are Symbols. Each mode or port has two entries in the
+# state or I/O vector, named by appending the basis suffixes.
+
+suffixes(::LadderBasis) = ("a", "adag")
+suffixes(::QuadratureBasis) = ("x", "p")
+
+"""
+    mode_names(sys) → Vector{String}
+
+The name of each mode, in state order. Empty for an unnamed mode, which takes the
+system's name on `concatenate`.
+"""
+mode_names(sys::Union{SLH, QuantumStateSpace}) = [mode.name for mode in sys.subspaces]
+
+"""
+    state_names(sys::QuantumStateSpace) → Vector{Symbol}
+
+The name of each entry of the state vector: `[:arm_x, :arm_p, …]` in the quadrature basis
+and `[:arm_a, :arm_adag, …]` in the ladder basis. An unnamed mode gives `[:x, :p]`.
+"""
+state_names(sys::QuantumStateSpace) =
+    [Symbol(isempty(m) ? s : m * "_" * s) for m in mode_names(sys) for s in suffixes(sys.basis)]
+
+# Port names expanded to the two entries of each port, e.g. "out" → ["out_x", "out_p"]
+port_names(ports, basis) = [port * "_" * s for port in ports for s in suffixes(basis)]
 
 # ── ControlSystems.jl interface ───────────────────────────────────────────────
 

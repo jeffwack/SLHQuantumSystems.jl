@@ -42,16 +42,21 @@ struct SLH
             end
         end
 
+        # mode names make the state names; "" is allowed once, and is promoted on concatenate
+        modenames = [mode.name for mode in subspaces]
+        allunique(modenames) || return error("$name: mode names must be unique, got $modenames")
+
         return new(name, subspaces, inputs, outputs, S, L, H)
     end
 end
 
-#This constructor automatically makes all the modes 'generic' and names the inputs and outputs in1, in2,... out1, out2...
+#This constructor automatically makes all the modes 'generic' and names them mode1, mode2,... and the inputs and outputs in1, in2,... out1, out2...
+#A single mode is named "", and a single port in/out
 function SLH(name, S, L, H)
 
     n = maximum(acts_on(sum(L) + H))
 
-    subspaces = fill(GenericMode(""), n)
+    subspaces = n == 1 ? [GenericMode("")] : [GenericMode("mode$k") for k in 1:n]
 
     m = length(L)
     if m == 1
