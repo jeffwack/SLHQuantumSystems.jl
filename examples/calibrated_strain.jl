@@ -2,165 +2,108 @@ using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
 using ControlSystems
-using GLMakie
-using LinearAlgebra
-using DelimitedFiles
-using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI, SpeedOfLightInVacuum as c_SI
+using CairoMakie
+using PhysicalConstants.CODATA2018: ReducedPlanckConstant, SpeedOfLightInVacuum
 
-# ## LIGO Physical Parameters (from GWINC A+ configuration)
-ℏ = ℏ_SI.val                         # J·s
-c_phys = c_SI.val                          # m/s
-λ = 1.064e-6                          # m  (Nd:YAG)
-ω_l = 2π * c_phys / λ                  # rad/s
+ħ = ReducedPlanckConstant.val
+c = SpeedOfLightInVacuum.val
 
-L_arm = 3995.0                            # m  (arm cavity length)
-T_ITM = 0.014                             # power transmittance of ITM
-κ_cavity = T_ITM * c_phys / (2 * L_arm)       # energy decay rate (FWHM linewidth) [rad/s]
+λ = 1.064e-6           # laser wavelength [m]
+L_arm = 3995.0         # arm length [m]
+T_ITM = 0.014          # ITM power transmittance
+P_circ = 750.0e3       # circulating power [W]
+m = 39.6 / 2;          # reduced mass of the Michelson [kg]
 
-P_circ = 750.0e3                             # W  (circulating power)
-m_mirror = 39.6 / 2                            # kg
-Ω_mech = 2π * 5.0e-6                         # rad/s — physical pendulum (~1 Hz)
+# The mirror is a free mass. `Ω_m` and `Γ_m` only regulate the model;
+# the result does not depend on them.
 
-mech_couple = 1.0e-23;
+Ω_m = 2π * 5.0e-6      # mechanical resonance [rad/s]
+Γ_m = 1.0e-23;         # mechanical port coupling [rad/s]
 
-# ## SLH model: optomechanical cavity (Chen 2013 eq 2.4) [Chen_2013](@cite)
+# ## Model
+#
+# Cavity mode `a`, mirror mode `b`, linearized radiation-pressure coupling `g`:
+#
+# ```math
+# H = Ω b^†b - g (b + b^†)(a + a^†), \qquad L = [\sqrt{κ}\, a, \sqrt{Γ}\, b]
+# ```
 
 hilb = FockSpace(:cavity) ⊗ FockSpace(:mirror)
-subspaces = [OpticalMode(""), MechanicalMode("")]
+a = Destroy(hilb, :a, 1)
+b = Destroy(hilb, :b, 2)
 
-opt_sub = subspaces[1]
-mech_sub = subspaces[2]
-
-a = Destroy(hilb, operatornames(opt_sub)[1], 1)
-b = Destroy(hilb, operatornames(mech_sub)[1], 2)
-
-@variables ω l κ Ω m Γ g
-
-H = Ω * b' * b - g * (b' + b) * (a' + a)
-L_ops = [sqrt(κ) * a, sqrt(Γ) * b]
-S_mat = [1 0; 0 1]
+@variables κ Ω Γ g
 
 slh = SLH(
-    "opto", subspaces,
-    ["l_in", "m_in"],
-    ["l_out", "m_out"],
-    S_mat, L_ops, H
+    "arm", [OpticalMode(""), MechanicalMode("")],
+    ["l_in", "m_in"], ["l_out", "m_out"],
+    [1 0; 0 1], [sqrt(κ) * a, sqrt(Γ) * b],
+    Ω * b' * b - g * (b' + b) * (a' + a)
 )
 
 qss = toquadrature(QuantumStateSpace(slh))
 
-# ## Coupling constants [Aspelmeyer_Kippenberg_Marquardt_2014](@cite)
+# The drift matrix, state order `(x_a, p_a, x_b, p_b)`. Amplitude `x_a` pushes
+# the mirror (`p_b`); mirror position `x_b` shifts the phase `p_a`.
 
-# Zero-point fluctuation length of the mechanical mode [m]
-# Would like to calculate as:
-# x_zpf = zpf_length(mech_sub, numeric.parameters)
-# but numeric is not defined yet, this is a bit of a circular requirement
-x_zpf = sqrt(ℏ / (2 * m_mirror * Ω_mech))
+qss.A
 
-# Single-photon optomechanical coupling [rad/s]
-#   g₀ = (ω_L / L) · x_zpf
-g_OM = (ω_l / (L_arm)) * x_zpf
+# ## Parameters
 
-# Stored intracavity photon number (dimensionless)
-#   n̄_cav = P_circ · (2L/c) / (ℏ·ω_l)
-# The (2L/c) round-trip time converts circulating photon *flux* [1/s]
-# into the population actually resonating inside the cavity.
-N_bar = P_circ * (2 * L_arm / c_phys) / (ℏ * ω_l)
+ω_l = 2π * c / λ
+x_zpf = sqrt(ħ / (2 * m * Ω_m))
+N = P_circ * (2 * L_arm / c) / (ħ * ω_l)   # intracavity photon number
 
-# Linearized optomechanical coupling [rad/s]
-#   g = g₀·√n̄  (used as the coefficient of (a+a†)(b+b†) in H)
-g_optomech = g_OM * sqrt(N_bar) #eq 30 of aspelmeyer
+numeric = substitute(qss, Dict(
+    κ => T_ITM * c / (2 * L_arm),          # FWHM linewidth
+    Ω => Ω_m,
+    Γ => Γ_m,
+    g => (ω_l / L_arm) * x_zpf * sqrt(N),  # g₀√N [Aspelmeyer_Kippenberg_Marquardt_2014](@cite)
+))
 
-println("=== Parameters ===")
-println("Ω/(2π)    = $(round(Ω_mech / (2π), digits = 2)) Hz  (mechanical pendulum resonance )")
-println("g_OM/(2π) = $(round(g_OM / (2π), sigdigits = 3)) Hz  (single-photon coupling)")
-println("N̄         = $(round(N_bar, sigdigits = 3)) photons")
+# ## Signal and noise
+#
+# Strain `h` acts on the mirror as a force `F = m ω² L h / 2`. A force enters
+# through the momentum quadrature of `m_in` as `p_in = √2 x_zpf F / (ħ √Γ)`.
 
-# ## Numerical substitution
+f = logrange(1.0, 10_000.0, 400)
+ω = 2π .* f
 
-paramdict = Dict(
-    ω => 0,              # cavity detuning
-    l => L_arm,
-    κ => κ_cavity,
-    Ω => Ω_mech,
-    m => m_mirror,
-    g => g_optomech,
-    Γ => mech_couple
-)
+G = freqresp(numeric, ω)
+lx, lp, mp = 1, 2, 4   # quadrature channels: (l_x, l_p, m_x, m_p)
 
-numeric = substitute(qss, paramdict)
+signal = G[lp, mp, :] .* sqrt(2) .* x_zpf .* (m .* ω .^ 2 .* L_arm ./ 2) ./ (ħ * sqrt(Γ_m))
 
-# ## Frequency grid (angular, rad/s)
+S_out = spectral_density(numeric, ω)["l_out_p", "l_out_p"]
+h_total = sqrt.(real.(S_out)) ./ abs.(signal)
+h_shot = sqrt.(abs2.(G[lp, lp, :]) ./ 2) ./ abs.(signal)
+h_rpn = sqrt.(abs2.(G[lp, lx, :]) ./ 2) ./ abs.(signal);
 
-freq_hz = collect(logrange(0.1, 20_000.0, 500))
-freq = 2π .* freq_hz;
+# ## Closed form
+#
+# The conventional-interferometer result of
+# [Kimble_Levin_Matsko_Thorne_Vyatchanin_2001](@cite), with Michelson mass `2m`:
+#
+# ```math
+# S_h = \frac{h_\text{SQL}^2}{2}\left(\frac{1}{\mathcal{K}} + \mathcal{K}\right), \quad
+# h_\text{SQL}^2 = \frac{4ħ}{m ω^2 L^2}, \quad
+# \mathcal{K} = \frac{8 ω_l P γ}{m L c\, ω^2 (ω^2 + γ^2)}
+# ```
+#
+# where `γ = κ/2` is the cavity half-linewidth.
 
-# ## output noise spectral density
-
-G = freqresp(numeric, freq)
-
-sd = spectral_density(numeric, freq)
-
+γ = T_ITM * c / (4 * L_arm)
+h_SQL = sqrt.(4ħ ./ (m .* ω .^ 2 .* L_arm^2))
+𝒦 = 8 * ω_l * P_circ * γ ./ (m * L_arm * c .* ω .^ 2 .* (ω .^ 2 .+ γ^2))
+h_kimble = h_SQL .* sqrt.((1 ./ 𝒦 .+ 𝒦) ./ 2)
 
 fig = Figure()
-ax_tf = Axis(
-    fig[1, 1];
-    xscale = log10, yscale = log10,
-    xlabel = "Frequency [Hz]",
-    title = "transfer functions (unitless)"
-)
-
-for (ii, iname) in enumerate(sd.names)
-    for (jj, jname) in enumerate(sd.names)
-        lines!(ax_tf, freq_hz, abs.(G[ii, jj, :]), label = "$iname, $jname")
-    end
-end
-fig[1, 2] = Legend(fig, ax_tf)
-
-
-ax_noise = Axis(
-    fig[2, 1];
-    xscale = log10, yscale = log10,
-    limits = (nothing, nothing, nothing, nothing),
-    xlabel = "Frequency [Hz]",
-    title = "spectral densities (quanta per root hertz)"
-)
-
-for ii in sd.names
-    for jj in sd.names
-        lines!(ax_noise, freq_hz, abs.(sd[ii, jj]), label = "$ii, $jj")
-    end
-end
-
-
-fig[2, 2] = Legend(fig, ax_noise)
-
-
-ax_sig = Axis(
-    fig[1, 3];
-    xscale = log10, yscale = log10,
-    xlabel = "Frequency [Hz]",
-    title = "signal (light quanta per strain?)"
-)
-
-ii = 2
-jj = 4
-
-sig = G[ii, jj, :] .* L_arm .* freq .^ 2 ./ (2 * sqrt(2) .* Ω_mech .* x_zpf .* mech_couple)
-
-lines!(ax_sig, freq_hz, abs.(sig), label = "$(sd.names[ii]), $(sd.names[jj])")
-
-fig[1, 4] = Legend(fig, ax_sig)
-
-ax_strain = Axis(
-    fig[2, 3];
-    xscale = log10, yscale = log10,
-    xlabel = "Frequency [Hz]",
-    title = "Strain sensitivity"
-)
-
-strainsense = sqrt.(real.(sd["l_out_p", "l_out_p"])) ./ abs.(sig)
-
-lines!(ax_strain, freq_hz, strainsense)
-
+ax = Axis(fig[1, 1]; xscale = log10, yscale = log10,
+    xlabel = "Frequency [Hz]", ylabel = "Strain ASD [1/√Hz]")
+lines!(ax, f, h_total; label = "total")
+lines!(ax, f, h_shot; label = "shot", linestyle = :dash)
+lines!(ax, f, h_rpn; label = "radiation pressure", linestyle = :dash)
+lines!(ax, f, h_kimble; label = "closed form", color = :black, linestyle = :dot)
+lines!(ax, f, h_SQL; label = "SQL", color = :gray)
+axislegend(ax; position = :lb)
 fig
