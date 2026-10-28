@@ -1,7 +1,7 @@
 #=
 This file provides methods for evaluating the frequency domain response of a linear system.
 
-For the input-to-output transfer matrix G(ω) as a plain array, use ControlSystems.jl's
+For the input-to-output transfer matrix G(ω) as a plain array, use ControlSystemsBase.jl's
 `freqresp(sys, ωs)` directly — it works for QuantumStateSpace via the `ssdata` implementation
 in abcd.jl.
 
@@ -10,7 +10,7 @@ and as inputs (a unit excitation of a state, such as a force on a mirror), and i
 name: Strings for ports and Symbols for states.
 =#
 
-using ControlSystems: freqresp, ss
+using ControlSystemsBase: freqresp, ss
 
 """
     TransferMatrix
@@ -51,8 +51,8 @@ function transfer_matrix(sys::QuantumStateSpace, freqs::AbstractVector{<:Real})
     states = state_names(sys)
     return TransferMatrix(
         collect(Float64, freqs), freqresp(augmented, freqs),
-        [port_names(sys.outputs, sys.basis); states],
-        [port_names(sys.inputs, sys.basis); states]
+        [output_names(sys); states],
+        [input_names(sys); states]
     )
 end
 

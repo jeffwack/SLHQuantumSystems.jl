@@ -1,9 +1,9 @@
 #= This file defines a type for the representation of linear systems
 =#
 
-using ControlSystems: AbstractStateSpace, Continuous
-import ControlSystems: system_name, input_names, output_names, state_names,
-    ssdata, nstates, ninputs, noutputs, series, feedback
+using ControlSystemsBase: AbstractStateSpace, Continuous
+import ControlSystemsBase: system_name, input_names, output_names, state_names,
+    ssdata, nstates, ninputs, noutputs, series, feedback, StateSpace
 
 abstract type BasisType end
 
@@ -43,8 +43,6 @@ struct QuantumStateSpace{TE, TB <: BasisType} <: AbstractStateSpace{TE}
 end
 
 system_name(sys::QuantumStateSpace) = sys.name
-input_names(sys::QuantumStateSpace) = sys.inputs
-output_names(sys::QuantumStateSpace) = sys.outputs
 
 # ── Names ─────────────────────────────────────────────────────────────────────
 # Ports are Strings and states are Symbols. Each mode or port has two entries in the
@@ -69,16 +67,37 @@ and `[:arm_a, :arm_adag, …]` in the ladder basis. An unnamed mode gives `[:x, 
 """
 state_names(sys::QuantumStateSpace) =
     [Symbol(isempty(m) ? s : m * "_" * s) for m in mode_names(sys) for s in suffixes(sys.basis)]
+state_names(sys::QuantumStateSpace, i) = state_names(sys)[i]
 
-# Port names expanded to the two entries of each port, e.g. "out" → ["out_x", "out_p"]
-port_names(ports, basis) = [port * "_" * s for port in ports for s in suffixes(basis)]
+"""
+    input_ports(sys) → Vector{String}
+    output_ports(sys) → Vector{String}
 
-# ── ControlSystems.jl interface ───────────────────────────────────────────────
+The name of each input or output port, e.g. `["in"]`. Each port has two entries in the
+input or output vector; see [`input_names`](@ref).
+"""
+input_ports(sys::Union{SLH, QuantumStateSpace}) = sys.inputs
+output_ports(sys::Union{SLH, QuantumStateSpace}) = sys.outputs
 
-ssdata(sys::QuantumStateSpace) = (sys.A, sys.B, sys.C, sys.D)
-nstates(sys::QuantumStateSpace) = size(sys.A, 1)
-ninputs(sys::QuantumStateSpace) = size(sys.B, 2)
-noutputs(sys::QuantumStateSpace) = size(sys.C, 1)
+"""
+    input_names(sys::QuantumStateSpace) → Vector{String}
+    output_names(sys::QuantumStateSpace) → Vector{String}
+
+The name of each entry of the input or output vector, labelling the columns and rows of
+D: `["in_x", "in_p", …]` in the quadrature basis and `["in_a", "in_adag", …]` in the
+ladder basis. The port names alone are [`input_ports`](@ref) and [`output_ports`](@ref).
+"""
+input_names(sys::QuantumStateSpace) = expand_ports(input_ports(sys), sys.basis)
+output_names(sys::QuantumStateSpace) = expand_ports(output_ports(sys), sys.basis)
+input_names(sys::QuantumStateSpace, i) = input_names(sys)[i]
+output_names(sys::QuantumStateSpace, i) = output_names(sys)[i]
+
+expand_ports(ports, basis) = [port * "_" * s for port in ports for s in suffixes(basis)]
+
+# A plain StateSpace, without names or basis, for the ControlSystemsBase functions that
+# build a new system (series, append, step, …). ss(sys) calls this.
+StateSpace(sys::QuantumStateSpace) = StateSpace(sys.A, sys.B, sys.C, sys.D, sys.timeevol)
+Base.convert(::Type{StateSpace}, sys::QuantumStateSpace) = StateSpace(sys)
 
 const _COMPOSE_ERROR = """not implemented"""
 

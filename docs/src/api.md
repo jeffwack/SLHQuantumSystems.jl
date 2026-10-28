@@ -28,6 +28,8 @@ LadderBasis
 QuadratureBasis
 mode_names
 state_names
+input_ports
+input_names
 ```
 
 ## Frequency Response
@@ -35,14 +37,6 @@ state_names
 ```@docs
 TransferMatrix
 transfer_matrix
-```
-
-## Spectral Densities
-
-```@docs
-SpectralDensityMatrix
-spectral_density
-vacuum_noise
 ```
 
 ## Component Library

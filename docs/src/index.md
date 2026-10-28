@@ -28,7 +28,7 @@ SLHQuantumSystems.jl is for:
 - Composing named SLH 'blocks' via `concatenate` and `feedbackreduce`. Input,
   output, operator, and parameter names are promoted during composition.
 - Converting linear-bosonic SLH systems to state-space form
-  `QuantumStateSpace <: ControlSystems.AbstractStateSpace`.
+  `QuantumStateSpace <: ControlSystemsBase.AbstractStateSpace`.
 
 ### Component Library
 

@@ -144,8 +144,17 @@ x_\mathrm{phys} = \sqrt{2}\, x_\mathrm{zpf}\, x,
 x_\mathrm{zpf} = \sqrt{\frac{\hbar}{2 m \Omega}} .
 ```
 
-The vacuum state has variance ``\frac{1}{2}`` in each quadrature, so the default
-input noise in [`spectral_density`](@ref) is ``\frac{1}{2} I``.
+The vacuum state has variance ``\frac{1}{2}`` in each quadrature. The spectral density
+of the outputs and states driven by input noise ``S_\mathrm{in}`` is
+``S(\omega) = G(\omega)\, S_\mathrm{in}\, G(\omega)^\dagger``, where ``G`` is the input
+columns of [`transfer_matrix`](@ref). For vacuum inputs, ``S_\mathrm{in} = \frac{1}{2} I``
+in the quadrature basis, so the spectrum of one output is half the sum of its squared
+responses to each input quadrature:
+
+```julia
+T = transfer_matrix(sys, ω)
+S_out_p = (abs2.(T["out_p", "in_x"]) .+ abs2.(T["out_p", "in_p"])) ./ 2
+```
 
 ### Frequency responses
 

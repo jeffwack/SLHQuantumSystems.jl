@@ -3,7 +3,7 @@ using Test
 using SecondQuantizedAlgebra
 using Symbolics
 using LinearAlgebra
-using ControlSystems
+using ControlSystemsBase
 
 @testset "SLHQuantumSystems.jl" begin
 
@@ -118,6 +118,19 @@ using ControlSystems
         @test mode_names(both) == ["A", "B"]
         @test state_names(QuantumStateSpace(both)) == [:A_x, :A_p, :B_x, :B_p]
 
+        # input_names and output_names label the columns and rows of D, two per port, as
+        # ControlSystemsBase expects; input_ports and output_ports name the ports alone
+        qboth = QuantumStateSpace(both)
+        @test input_ports(both) == input_ports(qboth) == ["A_in", "B_in"]
+        @test output_ports(qboth) == ["A_out", "B_out"]
+        @test input_names(qboth) == ["A_in_x", "A_in_p", "B_in_x", "B_in_p"]
+        @test output_names(QuantumStateSpace(both, LadderBasis())) == ["A_out_a", "A_out_adag", "B_out_a", "B_out_adag"]
+        @test length(input_names(qboth)) == ninputs(qboth)
+        @test length(output_names(qboth)) == noutputs(qboth)
+        @test input_names(qboth, 3) == "B_in_x"
+        @test output_names(qboth, 2) == "A_out_p"
+        @test state_names(qboth, 4) == :B_p
+
         # Mode names must be unique, which catches concatenating two systems of the same name
         @test_throws ErrorException concatenate([cavity("A"), cavity("A")], "S")
         hp = FockSpace(:one) ⊗ FockSpace(:two)
@@ -138,10 +151,13 @@ using ControlSystems
         @test_throws ErrorException T[:A_out_p, :A_in_x]
         @test_throws ErrorException T["A_ou", "A_in_x"]
 
-        # The state spectra of a vacuum-driven cavity
-        sd = spectral_density(qss, ω)
-        @test sd["A_out_p", "A_out_p"] ≈ G[2, 1, :] .* conj(G[2, 1, :]) / 2 + G[2, 2, :] .* conj(G[2, 2, :]) / 2
-        @test real(sd[:A_x, :A_x]) ≈ real(sd[:A_p, :A_p])
+        # ss drops to a plain StateSpace, for the functions that build a new system
+        plain = ss(qss)
+        @test plain isa StateSpace{Continuous, Float64}
+        @test ssdata(plain) == ssdata(qss)
+        @test convert(StateSpace, qss) == plain
+        @test freqresp(plain * plain, ω) ≈ stack(G[:, :, k]^2 for k in eachindex(ω))
+        @test ss(QuantumStateSpace(both)) isa StateSpace
     end
 
     @testset "single-mode squeezing convention" begin
@@ -157,7 +173,9 @@ using ControlSystems
         @test qss.A ≈ [ϵ0 - κ0 / 2 0; 0 -ϵ0 - κ0 / 2]
 
         ω = [0.1, 1.0, 3.0]
-        Sp = real(spectral_density(qss, ω)["out_p", "out_p"])
+        # The vacuum spectrum of out_p, ½ in each input quadrature
+        vacuum_p(sys, ω) = (T = transfer_matrix(sys, ω); (abs2.(T["out_p", "in_x"]) .+ abs2.(T["out_p", "in_p"])) ./ 2)
+        Sp = vacuum_p(qss, ω)
         @test Sp ≈ [0.5 * (w^2 + (κ0 / 2 - ϵ0)^2) / (w^2 + (κ0 / 2 + ϵ0)^2) for w in ω]
 
         # The output stays a minimum-uncertainty state at every frequency
@@ -166,7 +184,7 @@ using ControlSystems
 
         # At threshold the squeezed quadrature goes to zero noise as ω → 0
         thr = substitute(QuantumStateSpace(sqz), Dict(κ => κ0, ϵ => κ0 / 2))
-        @test real(spectral_density(thr, [1.0e-3])["out_p", "out_p"][1]) < 1.0e-5
+        @test only(vacuum_p(thr, [1.0e-3])) < 1.0e-5
 
         # The component library follows the same convention
         lib = substitute(QuantumStateSpace(squeezing_cavity("A")), Dict(κ => κ0, ϵ => ϵ0))

@@ -17,7 +17,7 @@ SLHQuantumSystems is for:
   ([SecondQuantizedAlgebra.jl](https://github.com/qojulia/SecondQuantizedAlgebra.jl)).
 - Composing SLH systems via `concatenate` and `feedbackreduce`.
 - Converting **linear-bosonic** SLH systems to state-space form
-  (`QuantumStateSpace <: ControlSystems.AbstractStateSpace`) for
+  (`QuantumStateSpace <: ControlSystemsBase.AbstractStateSpace`) for
   frequency-domain analysis with ControlSystems.jl (`freqresp`, Bode, etc.).
 
 ## Installation

@@ -72,10 +72,11 @@ T = transfer_matrix(numeric, ω)
 
 signal = T["out_p", :mirror_p] .* (m .* ω .^ 2 .* L_arm ./ 2) ./ ħ
 
-S_out = spectral_density(numeric, ω)["out_p", "out_p"]
-h_total = sqrt.(real.(S_out)) ./ abs.(signal)
-h_shot = sqrt.(abs2.(T["out_p", "in_p"]) ./ 2) ./ abs.(signal)
-h_rpn = sqrt.(abs2.(T["out_p", "in_x"]) ./ 2) ./ abs.(signal);
+S_shot = abs2.(T["out_p", "in_p"]) ./ 2   # vacuum: ½ in each input quadrature
+S_rpn = abs2.(T["out_p", "in_x"]) ./ 2
+h_shot = sqrt.(S_shot) ./ abs.(signal)
+h_rpn = sqrt.(S_rpn) ./ abs.(signal)
+h_total = sqrt.(S_shot .+ S_rpn) ./ abs.(signal);
 
 # ## Closed form
 #
