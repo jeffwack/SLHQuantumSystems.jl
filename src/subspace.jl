@@ -1,17 +1,83 @@
-# This file defines the Subspace type. 
-# Each SLH system has a vector of subspaces which provides the names of the parameters associated with the corresponding Hilbert space.
+# This file defines the Subspace types. Each SLH system has one subspace per factor of its Hilbert space.
+# A subspace holds only a name; the names of everything found there follow from it and from two types:
+#   - the type of subspace says which parameters it has, e.g. an OpticalMode has a length L
+#   - the type of its Hilbert space (from SecondQuantizedAlgebra) says which operators act on it
+# Each name is the subspace name and a suffix, as for states and ports: "cavity_L", "cavity_a".
 
-using PhysicalConstants.CODATA2018: ReducedPlanckConstant as ℏ_SI
+"""
+    Subspace{S}
 
-abstract type Subspace end
+A factor of an SLH system's Hilbert space, such as a mode or an atom, whose Hilbert space
+has type `S` (`FockSpace`, `PhaseSpace`, `NLevelSpace`, …). Each subtype has two fields,
+`name::String` and `spaceargs::Tuple`, the arguments of `S` after its name, such as the
+number of levels of an `NLevelSpace`.
+"""
+abstract type Subspace{S} end
 
-function promote_name(mode::Subspace, parentname)
-    if mode.name == ""
-        newname = parentname
-    else
-        newname = parentname * "_" * mode.name
-    end
-    return typeof(mode).name.wrapper(newname)
+"""
+    GenericSubspace(name, space, spaceargs...)
+
+A subspace with no parameters, on a Hilbert space of type `space`:
+`GenericSubspace("atom", NLevelSpace, 2)`.
+"""
+struct GenericSubspace{S} <: Subspace{S}
+    name::String
+    spaceargs::Tuple
+end
+# These constructors take a name from the user and check it; promote_name builds promoted names directly
+GenericSubspace(name, space::Type, spaceargs...) = (check_name("subspace", name); GenericSubspace{space}(name, spaceargs))
+
+"""
+    OpticalMode(name, space = FockSpace, spaceargs...)
+
+An optical mode, such as the mode of a cavity. Its parameter is the length `L` [m].
+"""
+struct OpticalMode{S} <: Subspace{S}
+    name::String
+    spaceargs::Tuple
+end
+OpticalMode(name, space::Type = FockSpace, spaceargs...) = (check_name("subspace", name); OpticalMode{space}(name, spaceargs))
+
+"""
+    MechanicalMode(name, space = FockSpace, spaceargs...)
+
+A mechanical mode, such as the motion of a mirror. Its parameter is the mass `m` [kg].
+`MechanicalMode("mirror", PhaseSpace)` has position and momentum operators, as for a free mass.
+"""
+struct MechanicalMode{S} <: Subspace{S}
+    name::String
+    spaceargs::Tuple
+end
+MechanicalMode(name, space::Type = FockSpace, spaceargs...) = (check_name("subspace", name); MechanicalMode{space}(name, spaceargs))
+
+# The subspace's Hilbert space, built here rather than read from a ProductSpace
+hilbertspace(sub::Subspace{S}) where {S} = S(Symbol(sub.name), sub.spaceargs...)
+
+# The name is promoted as in S, L and H, and the names found at the subspace follow it
+function promote_name(sub::Subspace, parentname)
+    newname = isempty(sub.name) ? parentname : parentname * "_" * sub.name
+    return typeof(sub)(newname, sub.spaceargs)
+end
+
+# The name of something found at a subspace: "cavity_L", or "L" for an unnamed subspace
+subname(sub, suffix) = Symbol(isempty(sub.name) ? suffix : sub.name * "_" * suffix)
+
+# The parameters found at a subspace, by its type
+parameter_suffixes(::GenericSubspace) = ()
+parameter_suffixes(::OpticalMode) = ("L",)
+parameter_suffixes(::MechanicalMode) = ("m",)
+subspace_parameters(sub) = [Symbolics.variable(subname(sub, s)) for s in parameter_suffixes(sub)]
+
+# The operators found at a subspace, by the type of its Hilbert space. `h` is the system's Hilbert
+# space and `at` the subspace's index in it, empty when the system has only this subspace.
+subspace_operators(sub::Subspace{FockSpace}, h, at...) = [Destroy(h, subname(sub, "a"), at...)]
+function subspace_operators(sub::Subspace{PhaseSpace}, h, at...)
+    return [Position(h, subname(sub, "x"), at...), Momentum(h, subname(sub, "p"), at...)]
+end
+function subspace_operators(sub::Subspace{NLevelSpace}, h, at...)
+    levels = first(sub.spaceargs)
+    levels = levels isa Integer ? (1:levels) : levels
+    return [Transition(h, subname(sub, "σ"), i, j, at...) for i in levels, j in levels]
 end
 
 #rename keeps the symtype and metadata, so a complex (::Number) parameter stays complex
@@ -20,114 +86,3 @@ function promote_name(parameter, parentname)
     new_sym = Symbol(parentname,"_",old_sym)
     return Symbolics.rename(parameter, new_sym)
 end
-
-"""
-    param_key(mode::Subspace, base::Symbol) → Symbol
-
-Return the parameter dict key for `base` in the context of `mode`.
-For an unnamed mode (`mode.name == ""`), returns `base` directly.
-For a named mode, returns `Symbol(mode.name, "_", base)`.
-
-This is the single source of truth for parameter naming: all functions
-that look up mode parameters should use this rather than positional indexing.
-"""
-param_key(mode::Subspace, base::Symbol) =
-    mode.name == "" ? base : Symbol(mode.name, "_", base)
-
-struct MechanicalMode <: Subspace
-    name::String
-end
-
-function parameternames(subsys::MechanicalMode)
-    bases = [:Ω, :m, :Γ]
-    return [param_key(subsys, b) for b in bases]
-end
-
-function operatornames(subsys::MechanicalMode)
-    return [:b]
-end
-
-quadrature_parameter_names(subsys::MechanicalMode) = Symbol[]
-
-function quadrature_transform(subsys::MechanicalMode, params::Dict)
-    c = 1 / sqrt(Num(2))
-    left = c * [1 1; -im im]
-    right = c * [1 im; 1 -im]
-    return (left, right)
-end
-
-"""
-Zero-point fluctuation amplitude [m].
-x_zpf = √(ℏ / (2 m Ω))
-"""
-function zpf_length(subsys::MechanicalMode, params::Dict)
-    m = params[param_key(subsys, :m)]
-    Ω = params[param_key(subsys, :Ω)]
-    return sqrt(ℏ_SI.val / (2 * m * Ω))
-end
-
-"""Zero-point fluctuation momentum [kg⋅m/s]."""
-function zpf_momentum(subsys::MechanicalMode, params::Dict)
-    m = params[param_key(subsys, :m)]
-    Ω = params[param_key(subsys, :Ω)]
-    return sqrt(ℏ_SI.val * m * Ω / 2)
-end
-
-"""
-    quadrature_scale(subsys::MechanicalMode, params) → [x_zpf, p_zpf]
-
-SI conversion factors for the mechanical quadrature state vector.
-The dimensionless quadrature states relate to physical quantities as:
-  x_phys = √2 · x_zpf · q
-  p_phys = √2 · p_zpf · r
-where q = (b+b†)/√2 and r = i(b†-b)/√2 are the SLH quadrature coordinates.
-"""
-function quadrature_scale(subsys::MechanicalMode, params::Dict)
-    return [zpf_length(subsys, params), zpf_momentum(subsys, params)]
-end
-
-
-struct OpticalMode <: Subspace
-    name::String
-end
-
-function parameternames(subsys::OpticalMode)
-    bases = [:κ, :Δ, :ω, :l]
-    return [param_key(subsys, b) for b in bases]
-end
-
-function operatornames(subsys::OpticalMode)
-    return [:a]
-end
-
-quadrature_parameter_names(subsys::OpticalMode) = Symbol[]
-
-function quadrature_transform(subsys::OpticalMode, params::Dict)
-    c = 1 / sqrt(Num(2))
-    left = c * [1 1; -im im]
-    right = c * [1 im; 1 -im]
-    return (left, right)
-end
-
-quadrature_scale(subsys::OpticalMode, params::Dict) = [1.0, 1.0]
-
-
-struct GenericMode <: Subspace
-    name::String
-end
-
-function parameternames(subsys::GenericMode)
-    return [param_key(subsys, :ω)]
-end
-
-function operatornames(subsys::GenericMode)
-    return [:a]
-end
-
-quadrature_parameter_names(subsys::GenericMode) = Symbol[]
-
-quadrature_transform(subsys::GenericMode, params::Dict) = quadrature_transform(OpticalMode(""), params)
-
-quadrature_scale(subsys::GenericMode, params::Dict) = [1.0, 1.0]
-
-quadrature_transform(subsys::Subspace) = quadrature_transform(subsys, Dict())

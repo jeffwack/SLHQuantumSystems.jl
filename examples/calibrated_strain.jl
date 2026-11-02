@@ -3,7 +3,6 @@
 using SLHQuantumSystems
 using SecondQuantizedAlgebra
 using Symbolics
-using ControlSystems
 using CairoMakie
 using PhysicalConstants.CODATA2018: ReducedPlanckConstant, SpeedOfLightInVacuum
 
@@ -18,26 +17,27 @@ m = 39.6 / 2;          # reduced mass of the Michelson [kg]
 
 # ## Model
 #
-# Cavity mode `a`, and a free mirror with position `x` [m] and momentum `p`,
-# with `[x, p] = i`. The mass enters as `μ = m/ħ`, and `g` is the linearized
-# radiation-pressure coupling:
+# A cavity mode, and a free mirror with position `x` [m] and momentum `p`, with
+# `[x, p] = i`. The subspaces give the operators acting on them, `cavity_a`,
+# `mirror_x` and `mirror_p`, and their parameters, such as the mirror's mass
+# `mirror_m`. `g` is the linearized radiation-pressure coupling:
 #
 # ```math
-# H = \frac{p^2}{2μ} - g\, x (a + a^†), \qquad L = [\sqrt{κ}\, a]
+# H = \frac{ħ p^2}{2m} - g\, x (a + a^†), \qquad L = [\sqrt{κ}\, a]
 # ```
 
-hilb = FockSpace(:cavity) ⊗ PhaseSpace(:mirror)
-a = Destroy(hilb, :a, 1)
-x = Position(hilb, :x, 2)
-p = Momentum(hilb, :p, 2)
+subspaces = [OpticalMode("cavity"), MechanicalMode("mirror", PhaseSpace)]
+a, = operators(subspaces, "cavity")
+x, p = operators(subspaces, "mirror")
+M, = parameters(subspaces, "mirror")
 
-@variables κ μ g
+@variables κ g
 
 slh = SLH(
-    "arm", [OpticalMode("cavity"), MechanicalMode("mirror")],
+    "arm", subspaces,
     ["in"], ["out"],
     [1], [sqrt(κ) * a],
-    p^2 / (2μ) - g * x * (a' + a)
+    ħ * p^2 / (2M) - g * x * (a' + a)
 )
 
 qss = QuantumStateSpace(slh)
@@ -55,7 +55,7 @@ N = P_circ * (2 * L_arm / c) / (ħ * ω_l)   # intracavity photon number
 numeric = substitute(
     qss, Dict(
         κ => T_ITM * c / (2 * L_arm),  # FWHM linewidth
-        μ => m / ħ,
+        M => m,
         g => (ω_l / L_arm) * sqrt(N),  # g₀√N / x_zpf [Aspelmeyer_Kippenberg_Marquardt_2014](@cite)
     )
 )
@@ -68,7 +68,7 @@ numeric = substitute(
 f = logrange(1.0, 10_000.0, 400)
 ω = 2π .* f
 
-T = transfer_matrix(numeric, ω)
+T = transfer_function(numeric, ω)
 
 signal = T["out_p", :mirror_p] .* (m .* ω .^ 2 .* L_arm ./ 2) ./ ħ
 
@@ -101,10 +101,12 @@ ax = Axis(
     fig[1, 1]; xscale = log10, yscale = log10,
     xlabel = "Frequency [Hz]", ylabel = "Strain ASD [1/√Hz]"
 )
+xlims!(ax, 5, 5000)
+ylims!(ax, 5.0e-25, 5.0e-21)
 lines!(ax, f, h_total; label = "total")
 lines!(ax, f, h_shot; label = "shot", linestyle = :dash)
 lines!(ax, f, h_rpn; label = "radiation pressure", linestyle = :dash)
 lines!(ax, f, h_kimble; label = "closed form", color = :black, linestyle = :dot)
-lines!(ax, f, h_SQL; label = "SQL", color = :gray)
-axislegend(ax; position = :lb)
+lines!(ax, f, h_SQL; label = "free mass SQL", color = :gray)
+axislegend(ax; position = :rt)
 fig

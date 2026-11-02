@@ -13,30 +13,38 @@ concatenate
 feedbackreduce
 ```
 
-## Subspaces and Mode Parameters
+## Subspaces, Operators and Parameters
 
 ```@docs
-param_key
-zpf_length
-zpf_momentum
-quadrature_scale
+Subspace
+GenericSubspace
+OpticalMode
+MechanicalMode
+subspace
+hilbert
+operators
+parameters
 ```
 ## State Space
 
 ```@docs
-LadderBasis
+QuantumStateSpace
+AnnihilationCreationBasis
 QuadratureBasis
-mode_names
+subspace_names
 state_names
 input_ports
+output_ports
 input_names
+output_names
 ```
 
 ## Frequency Response
 
 ```@docs
-TransferMatrix
-transfer_matrix
+transfer_function
+QuantumTransferFunction
+SymbolicQuantumTransferFunction
 ```
 
 ## Component Library

@@ -3,26 +3,24 @@
 
 using ControlSystemsBase: AbstractStateSpace, Continuous
 import ControlSystemsBase: system_name, input_names, output_names, state_names,
-    ssdata, nstates, ninputs, noutputs, series, feedback, StateSpace
+    series, parallel, append, feedback, StateSpace
 
 abstract type BasisType end
 
 """
-Ladder (creation/annihilation) operator basis.
-State vector ordered as (a₁, a₁†, a₂, a₂†, ...) after interlacing.
+Annihilation-creation operator basis, the "complex mode form."
+State vector ordered as (a₁, a₁†, a₂, a₂†, ...)
 ABCD matrices are complex-valued.
 """
-struct LadderBasis <: BasisType end
+struct AnnihilationCreationBasis <: BasisType end
 
 """
 Quadrature (amplitude/phase) operator basis.
-State vector ordered as (X₁, P₁, X₂, P₂, ...).
-All modes use the same 1/√2 unitary transform from the ladder basis.
-For optical modes: X = (a+a†)/√2, P = i(a†-a)/√2.
-For mechanical modes: q = (b+b†)/√2, r = i(b†-b)/√2 (dimensionless, normalized
-consistently with optical quadratures; SI conversion via x_zpf, p_zpf).
-A mode written with `Position` and `Momentum` has states x and p, in the units of H.
-ABCD matrices are real-valued for physical systems; all entries in rad/s.
+State vector ordered as (x₁, p₁, x₂, p₂, ...).
+A mode on a `FockSpace` has the dimensionless quadratures
+x = (a+a†)/√2, p = i(a†-a)/√2, whatever its type.
+A mode on a `PhaseSpace` has states x and p, in the units of H and its parameters.
+ABCD matrices are real-valued for physical systems.
 """
 struct QuadratureBasis <: BasisType end
 
@@ -45,49 +43,127 @@ end
 system_name(sys::QuantumStateSpace) = sys.name
 
 # ── Names ─────────────────────────────────────────────────────────────────────
-# Ports are Strings and states are Symbols. Each mode or port has two entries in the
-# state or I/O vector, named by appending the basis suffixes.
+# Ports are named by Strings and states and their associated operators are named by Symbols.
+# Each mode or port has two entries in the state or I/O vector, named by appending the basis suffixes.
 
-suffixes(::LadderBasis) = ("a", "adag")
+suffixes(::AnnihilationCreationBasis) = ("a", "adag")
 suffixes(::QuadratureBasis) = ("x", "p")
 
 """
-    mode_names(sys) → Vector{String}
+    subspace_names(sys) → Vector{String}
 
-The name of each mode, in state order. Empty for an unnamed mode, which takes the
-system's name on `concatenate`.
+The name of each subspace, in order. Empty for an unnamed subspace, which takes the
+system's name on `concatenate`. In a `QuantumStateSpace` every subspace is a mode.
 """
-mode_names(sys::Union{SLH, QuantumStateSpace}) = [mode.name for mode in sys.subspaces]
+subspace_names(sys::Union{SLH, QuantumStateSpace}) = [sub.name for sub in sys.subspaces]
+
+"""
+    subspace(sys, name) → Subspace
+
+The subspace of `sys` named `name`.
+"""
+subspace(sys::Union{SLH, QuantumStateSpace}, name) = sys.subspaces[subspaceindex(sys.subspaces, name)]
+
+function subspaceindex(subs, name)
+    k = findfirst(sub -> sub.name == name, subs)
+    isnothing(k) && error("no subspace named $(repr(name)). Subspaces: $([sub.name for sub in subs])")
+    return k
+end
+
+"""
+    hilbert(sys) → HilbertSpace
+    hilbert(subspaces) → HilbertSpace
+
+The Hilbert space of a system or of a list of subspaces: the space of a single subspace, or
+the product of their spaces in order.
+"""
+hilbert(sys::Union{SLH, QuantumStateSpace}) = hilbert(sys.subspaces)
+hilbert(subs::AbstractVector{<:Subspace}) = length(subs) == 1 ? hilbertspace(only(subs)) : ⊗(hilbertspace.(subs)...)
+
+"""
+    operators(sys, name) → Vector
+    operators(subspaces, name) → Vector
+    operators(sys) → Vector
+
+The operators that act on the subspace named `name`, by the type of its Hilbert space and named
+after the subspace: `[cavity_a]` for a `FockSpace`, `[mirror_x, mirror_p]` for a `PhaseSpace`,
+and the matrix of transitions `atom_σᵢⱼ` for an `NLevelSpace`. Write H and L with them:
+
+    subs = [OpticalMode("cavity"), MechanicalMode("mirror", PhaseSpace)]
+    a, = operators(subs, "cavity")
+    x, p = operators(subs, "mirror")
+
+Without a name, the operators of every subspace.
+"""
+operators(sys::Union{SLH, QuantumStateSpace}, name) = operators(sys.subspaces, name)
+function operators(subs::AbstractVector{<:Subspace}, name)
+    k = subspaceindex(subs, name)
+    at = length(subs) == 1 ? () : (k,)
+    return subspace_operators(subs[k], hilbert(subs), at...)
+end
+operators(sys::Union{SLH, QuantumStateSpace}) = vcat((vec(operators(sys, sub.name)) for sub in sys.subspaces)...)
+
+"""
+    parameters(sys, name) → Vector
+    parameters(subspaces, name) → Vector
+    parameters(sys) → Vector
+
+The parameters of the subspace named `name`, by its type and named after the subspace:
+`[cavity_L]` for an `OpticalMode`, `[mirror_m]` for a `MechanicalMode`.
+
+Without a name, every parameter of `sys`: the symbols in its S, L and H, or its ABCD
+matrices, and the parameters of its subspaces.
+"""
+parameters(sys::Union{SLH, QuantumStateSpace}, name) = parameters(sys.subspaces, name)
+parameters(subs::AbstractVector{<:Subspace}, name) = subspace_parameters(subs[subspaceindex(subs, name)])
+parameters(sys::SLH) = symbols([vec(collect(sys.S)); sys.L; sys.H; subspace_parameters.(sys.subspaces)...])
+parameters(sys::QuantumStateSpace) = symbols([vec(sys.A); vec(sys.B); vec(sys.C); vec(sys.D); subspace_parameters.(sys.subspaces)...])
+
+symbols(xs) = sort(unique(Symbolics.wrap(v) for x in xs for v in Symbolics.get_variables(flattencomplex(x))); by = string)
 
 """
     state_names(sys::QuantumStateSpace) → Vector{Symbol}
 
 The name of each entry of the state vector: `[:arm_x, :arm_p, …]` in the quadrature basis
-and `[:arm_a, :arm_adag, …]` in the ladder basis. An unnamed mode gives `[:x, :p]`.
+and `[:arm_a, :arm_adag, …]` in the annihilation-creation basis. An unnamed mode gives `[:x, :p]`.
 """
-state_names(sys::QuantumStateSpace) =
-    [Symbol(isempty(m) ? s : m * "_" * s) for m in mode_names(sys) for s in suffixes(sys.basis)]
+state_names(sys::QuantumStateSpace) = [subname(sub, s) for sub in sys.subspaces for s in suffixes(sys.basis)]
 state_names(sys::QuantumStateSpace, i) = state_names(sys)[i]
 
 """
     input_ports(sys) → Vector{String}
-    output_ports(sys) → Vector{String}
 
-The name of each input or output port, e.g. `["in"]`. Each port has two entries in the
-input or output vector; see [`input_names`](@ref).
+The name of each input port, e.g. `["in"]`. Each port has two entries in the input
+vector; see [`input_names`](@ref).
 """
 input_ports(sys::Union{SLH, QuantumStateSpace}) = sys.inputs
+
+"""
+    output_ports(sys) → Vector{String}
+
+The name of each output port, e.g. `["out"]`. Each port has two entries in the output
+vector; see [`output_names`](@ref).
+"""
 output_ports(sys::Union{SLH, QuantumStateSpace}) = sys.outputs
 
 """
     input_names(sys::QuantumStateSpace) → Vector{String}
-    output_names(sys::QuantumStateSpace) → Vector{String}
+    input_names(sys::QuantumStateSpace, i)
 
-The name of each entry of the input or output vector, labelling the columns and rows of
-D: `["in_x", "in_p", …]` in the quadrature basis and `["in_a", "in_adag", …]` in the
-ladder basis. The port names alone are [`input_ports`](@ref) and [`output_ports`](@ref).
+The name of each entry of the input vector, labelling the columns of D: `["in_x", "in_p", …]`
+in the quadrature basis and `["in_a", "in_adag", …]` in the annihilation-creation basis. The port names
+alone are [`input_ports`](@ref).
 """
 input_names(sys::QuantumStateSpace) = expand_ports(input_ports(sys), sys.basis)
+
+"""
+    output_names(sys::QuantumStateSpace) → Vector{String}
+    output_names(sys::QuantumStateSpace, i)
+
+The name of each entry of the output vector, labelling the rows of D: `["out_x", "out_p", …]`
+in the quadrature basis and `["out_a", "out_adag", …]` in the annihilation-creation basis. The port names
+alone are [`output_ports`](@ref).
+"""
 output_names(sys::QuantumStateSpace) = expand_ports(output_ports(sys), sys.basis)
 input_names(sys::QuantumStateSpace, i) = input_names(sys)[i]
 output_names(sys::QuantumStateSpace, i) = output_names(sys)[i]
@@ -99,19 +175,132 @@ expand_ports(ports, basis) = [port * "_" * s for port in ports for s in suffixes
 StateSpace(sys::QuantumStateSpace) = StateSpace(sys.A, sys.B, sys.C, sys.D, sys.timeevol)
 Base.convert(::Type{StateSpace}, sys::QuantumStateSpace) = StateSpace(sys)
 
-const _COMPOSE_ERROR = """not implemented"""
+# ── Composition ───────────────────────────────────────────────────────────────
+# concatenate and feedbackreduce follow their SLH counterparts, including name promotion, so that
+# building the state space commutes with composing: QuantumStateSpace(concatenate(name, slhs...)) is
+# concatenate(name, QuantumStateSpace.(slhs)...), and likewise for feedbackreduce.
 
+"""
+    concatenate(name, systems::QuantumStateSpace...) → QuantumStateSpace
+
+Place state spaces side by side with no interconnections, with block-diagonal ABCD matrices.
+As for SLH systems, the modes, ports and parameters of each system are promoted by prepending
+its name, so building the state space before or after concatenating gives the same system.
+The systems must share a basis.
+"""
+function concatenate(name, syslist::QuantumStateSpace{TE, TB}...) where {TE, TB}
+    check_name("system", name)
+    names = [sys.name for sys in syslist]
+    allunique(names) || return error("$name: the systems being concatenated must have unique names, got $names")
+    basis = first(syslist).basis
+
+    subspaces = vcat([[promote_name(mode, sys.name) for mode in sys.subspaces] for sys in syslist]...)
+    inputs = vcat([[sys.name * "_" * input for input in sys.inputs] for sys in syslist]...)
+    outputs = vcat([[sys.name * "_" * output for output in sys.outputs] for sys in syslist]...)
+
+    # the SLH constructor's checks; distinct system names can still promote to the same name
+    subnames = [sub.name for sub in subspaces]
+    allunique(subnames) || return error("$name: subspace names must be unique, got $subnames")
+    allunique(inputs) || return error("$name: input names must be unique, got $inputs")
+    allunique(outputs) || return error("$name: output names must be unique, got $outputs")
+
+    promoted = [promote_matrices(sys) for sys in syslist]
+    A, B, C, D = (blockdiag([mats[k] for mats in promoted]) for k in 1:4)
+
+    return QuantumStateSpace(name, subspaces, inputs, outputs, A, B, C, D, first(syslist).timeevol, basis)
+end
+
+# The methods above take systems of one kind, and state spaces in one basis
+function concatenate(name, systems...)
+    if all(sys -> sys isa QuantumStateSpace, systems)
+        return error("$name: the systems being concatenated must share a basis; convert with QuantumStateSpace(sys, QuadratureBasis())")
+    end
+    kinds = join(unique(nameof.(typeof.(systems))), " and ")
+    return error("$name: cannot concatenate $kinds; build each SLH system's QuantumStateSpace first")
+end
+concatenate(name) = error("$name: concatenate needs at least one system")
+
+# cat(Ms...; dims = (1, 2)) fills the off-diagonal blocks with zero(eltype), which fails when the
+# entries of different systems promote to Any
+function blockdiag(Ms)
+    T = mapreduce(eltype, promote_type, Ms)
+    rows, cols = sum(M -> size(M, 1), Ms), sum(M -> size(M, 2), Ms)
+    out = T <: Union{Float64, ComplexF64} ? zeros(T, rows, cols) : Array{Any}(zeros(rows, cols))
+    i, j = 0, 0
+    for M in Ms
+        out[i .+ axes(M, 1), j .+ axes(M, 2)] = M
+        i, j = i + size(M, 1), j + size(M, 2)
+    end
+    return out
+end
+
+# The ABCD matrices with each parameter renamed by promote_name, as concatenate does for S, L and H
+function promote_matrices(sys::QuantumStateSpace)
+    mats = (sys.A, sys.B, sys.C, sys.D)
+    params = unique(v for M in mats for x in M for v in Symbolics.get_variables(flattencomplex(x)))
+    isempty(params) && return mats
+    rules = Dict{Any, Any}(v => promote_name(v, sys.name) for v in params)
+    return Tuple(map(x -> Symbolics.wrap(substitute(x, rules)), M) for M in mats)
+end
+
+# Connect the output port to the input port, as for SLH systems, which removes both ports. Their
+# two entries are joined, `u_input = y_output`, and the loop is solved:
+#
+#     K  = (I - D_xy)⁻¹
+#     A' = A + B_y K C_x                 B' = B_ȳ + B_y K D_xȳ
+#     C' = C_x̄ + D_x̄y K C_x              D' = D_x̄ȳ + D_x̄y K D_xȳ
+#
+# where x and y are the entries of the connected output and input, and x̄ and ȳ the rest.
+function feedbackreduce(sys::QuantumStateSpace, connection::Pair)
+    output, input = connection
+    x, y = connected_ports(sys, connection)
+    rx, cy = (2x - 1):2x, (2y - 1):2y
+    r̄, c̄ = setdiff(axes(sys.D, 1), rx), setdiff(axes(sys.D, 2), cy)
+
+    # flattencomplex makes each entry a single expression, since dividing a Complex{Num} compares its parts
+    A, B, C, D = (map(flattencomplex, M) for M in (sys.A, sys.B, sys.C, sys.D))
+
+    # D_xy is S_xy in the basis of the port, and det(I - D_xy) = |1 - S_xy|²
+    M = I - D[rx, cy]
+    d = Symbolics.wrap(expandsimplify(M[1, 1] * M[2, 2] - M[1, 2] * M[2, 1]))
+    if issymzero(d)
+        return error("$(sys.name): connecting $output to $input closes a loop with unit gain, so I - D between them is not invertible")
+    end
+    # elementwise, since a matrix divided by a bare symbolic value becomes a single symbolic array expression
+    K = [M[2, 2] -M[1, 2]; -M[2, 1] M[1, 1]] ./ d
+
+    newA = expandsimplify.(A + B[:, cy] * K * C[rx, :])
+    newB = expandsimplify.(B[:, c̄] + B[:, cy] * K * D[rx, c̄])
+    newC = expandsimplify.(C[r̄, :] + D[r̄, cy] * K * C[rx, :])
+    newD = expandsimplify.(D[r̄, c̄] + D[r̄, cy] * K * D[rx, c̄])
+
+    inputs = sys.inputs[eachindex(sys.inputs) .!= y]
+    outputs = sys.outputs[eachindex(sys.outputs) .!= x]
+    return QuantumStateSpace(sys.name, sys.subspaces, inputs, outputs, newA, newB, newC, newD, sys.timeevol, sys.basis)
+end
+
+issymzero(x) = (v = Symbolics.value(x); v isa Number && iszero(v))
+
+# ControlSystemsBase's compositions connect every port at once and drop the names, and parallel
+# connection copies a quantum field, so they are not defined for a QuantumStateSpace
+const _COMPOSE_ERROR = "compose a QuantumStateSpace with concatenate and feedbackreduce, which keep its names, or use ss(sys) for ControlSystemsBase's compositions"
+
+Base.:*(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
+Base.:+(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
+Base.:-(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
 series(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
-feedback(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
-feedback(::QuantumStateSpace) = error(_COMPOSE_ERROR)
+parallel(::QuantumStateSpace, ::QuantumStateSpace) = error(_COMPOSE_ERROR)
+append(::QuantumStateSpace, ::QuantumStateSpace...) = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace, ::QuantumStateSpace; kwargs...) = error(_COMPOSE_ERROR)
+feedback(::QuantumStateSpace; kwargs...) = error(_COMPOSE_ERROR)
 
 # Default: build in the quadrature basis, which accepts both ladder and position/momentum operators
 function QuantumStateSpace(sys::SLH)
     return _build_quadrature_ss(sys)
 end
 
-function QuantumStateSpace(sys::SLH, ::LadderBasis)
-    return _build_ladder_ss(sys)
+function QuantumStateSpace(sys::SLH, ::AnnihilationCreationBasis)
+    return _build_annihilation_creation_ss(sys)
 end
 
 function QuantumStateSpace(sys::SLH, ::QuadratureBasis)
@@ -119,15 +308,17 @@ function QuantumStateSpace(sys::SLH, ::QuadratureBasis)
 end
 
 """
-    _build_ladder_ss(sys::SLH) → QuantumStateSpace{Continuous, LadderBasis}
+    _build_annihilation_creation_ss(sys::SLH) → QuantumStateSpace{Continuous, AnnihilationCreationBasis}
 
-Build the ladder-basis ABCD matrices of a linear SLH system, following Combes eqs. 116-119.
+Build the annihilation-creation-basis ABCD matrices of a linear SLH system, following Combes eqs. 116-119.
 H and L are parsed term by term into
 
-    H = a†Ω₋a + ½(a†Ω₊a†ᵀ + h.c.)        L = Φ₋a + Φ₊a†ᵀ
+    H = a†Ω₋a + ½(a†Ω₊a†ᵀ + aᵀΞa)        L = Φ₋a + Φ₊a†ᵀ
 
+Combes writes the a† rows of A as the conjugates of the a rows, which holds only for a
+Hermitian H. Here they are built from i[H, a†] directly, so H need not be Hermitian.
 """
-function _build_ladder_ss(sys::SLH)
+function _build_annihilation_creation_ss(sys::SLH)
 
     S = sys.S
     L = sys.L
@@ -135,12 +326,13 @@ function _build_ladder_ss(sys::SLH)
 
     m = length(sys.subspaces)
 
-    # We separate our terms into energy conserving (omegaminus) and non-conserving (omegaplus).
+    # We separate our terms into energy conserving (omegaminus) and non-conserving (omegaplus for a†a†, Ξ for aa).
     omegaminus = Array{Any}(zeros(m, m))
     omegaplus = Array{Any}(zeros(m, m))
+    Ξ = Array{Any}(zeros(m, m))
 
-    #Each element of args is a vector of symbols/numbers corresponding to one additive term
-    for (term, coeff) in H
+    # a c-number H (no operators at all, e.g. 0) is not a QAdd, and only shifts the energy
+    for (term, coeff) in (H isa SecondQuantizedAlgebra.QAdd ? H : ())
 
         ops = term.ops
 
@@ -170,7 +362,10 @@ function _build_ladder_ss(sys::SLH)
             omegaplus[j, k] += c
             omegaplus[k, j] += c
         elseif length(creators) == 0
-            #If H is Hermitian then this is already handled
+            j = only(acts_on(ops[1]))
+            k = only(acts_on(ops[2]))
+            Ξ[j, k] += c
+            Ξ[k, j] += c
         else
             return error("don't know how to handle $term")
         end
@@ -214,9 +409,11 @@ function _build_ladder_ss(sys::SLH)
         conj.(phiplus) conj.(phiminus)
     ]
 
+    # i[H, a] = -i(Ω₋a + Ω₊a†) and i[H, a†] = -i(-Ξa - Ω₋ᵀa†). For a Hermitian H, Ξ = Ω₊* and
+    # Ω₋ᵀ = Ω₋*, which is Combes' form
     Omega = [
         omegaminus omegaplus;
-        -conj.(omegaplus) -conj.(omegaminus)
+        -Ξ -transpose(omegaminus)
     ]
 
 
@@ -235,20 +432,13 @@ function _build_ladder_ss(sys::SLH)
     C = P(n) * C * P(m)'
     D = P(n) * D * P(n)'
 
-    #=#Symbolic simplification
-    A = Symbolics.simplify.(A)
-    B = Symbolics.simplify.(B)
-    C = Symbolics.simplify.(C)
-    D = Symbolics.simplify.(D)
-    =#
-
-    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, A, B, C, D, Continuous(), LadderBasis())
+    return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, A, B, C, D, Continuous(), AnnihilationCreationBasis())
 
 end
 
 function ladder_only(op, where)
     if is_position(op) || is_momentum(op)
-        return error("$op in $where is a position or momentum operator; the ladder basis needs a length scale to define a, so use the quadrature basis")
+        return error("$op in $where is a position or momentum operator; the annihilation-creation basis needs a length scale to define a, so use the quadrature basis")
     end
     if !(is_create(op) || is_destroy(op))
         return error("$op (acts_on $(only(acts_on(op)))) in $where is not a bosonic operator")
@@ -273,7 +463,8 @@ function _build_quadrature_ss(sys::SLH)
     Θ(k) = kron(I(k), [0 1; -1 0])
 
     G = Array{Any}(zeros(2m, 2m))
-    for (term, coeff) in sys.H
+    # a c-number H (no operators at all, e.g. 0) is not a QAdd, and only shifts the energy
+    for (term, coeff) in (sys.H isa SecondQuantizedAlgebra.QAdd ? sys.H : ())
         ops = term.ops
         #cnumbers do not contribute to Heisenberg eqs
         isempty(ops) && continue
@@ -320,7 +511,7 @@ function _build_quadrature_ss(sys::SLH)
         end
     end
 
-    # G, C and D are real; simplifying them first keeps the products below real
+    # C and D are real, and so is G for a Hermitian H; simplifying them first keeps the products below real
     G, C, D = (expandsimplify.(X) for X in (G, C, D))
 
     # C♯ = -Θ Cᵀ Θ, with C real
@@ -376,42 +567,7 @@ function P(n::Int)
     return PP
 end
 
-function dampterms(L, a)
-    return sum([0.5 * (Li' * commutator(a, Li) - commutator(a, Li') * Li) for Li in L])
-end
-
-function eqsofmotion(H, L, x)
-    eqs = simplify.(1.0im * commutator.([H], x) + dampterms.([L], x))
-    return eqs
-end
-
-#Depreciate?
-# Calculates the A matrix by calculating the equations of motion and placing coefficients term by term.
-#=
-function makedriftA(H,L,x)
-    eqs = eqsofmotion(H,L,x)
-    terms = get_additive_terms.(eqs)
-    args = [SymbolicUtils.arguments.(term) for term in terms]
-    
-    N = length(x)
-
-    A = Array{Any}(zeros(N, N))
-
-    #now we can build A one row at a time
-    for (ii,row) in enumerate(args)
-        for arglist in row
-            qsym = arglist[findfirst(q->q isa SecondQuantizedAlgebra.QNumber, arglist)] #find the operator (assumes there is only one!)
-            idx = findfirst(q->q==qsym, x)                                             #find the index in the state vector
-            coeff = *(filter(c->!(c isa SecondQuantizedAlgebra.QNumber), arglist)...) # the coefficient is everything else
-            A[ii,idx] += coeff
-        end
-    end
-
-    return A
-end
-=#
-
-#Does not substitute operators
+#Does not substitute operators; substitutes into the ABCD matrices
 function Symbolics.substitute(sys::QuantumStateSpace, dict)
     newA = substitute_matrix(sys.A, dict)
     newB = substitute_matrix(sys.B, dict)
@@ -429,12 +585,23 @@ function substitute_matrix(M, dict)
     # entry, and substituting a complex value into a part breaks complex(re, im)
     newM = Symbolics.value.(Symbolics.substitute.(flattencomplex.(M), [dict]; fold = Val(true)))
     if all(x -> x isa Number && !(x isa Num) && !(x isa Complex{Num}), newM)
-        return all(x -> iszero(imag(x)), newM) ? Float64.(real.(newM)) : ComplexF64.(newM)
+        # Array{T}(…) rather than T.(…), which keeps the Any eltype of an empty matrix (a system with no modes)
+        return all(x -> iszero(imag(x)), newM) ? Array{Float64}(real.(newM)) : Array{ComplexF64}(newM)
     end
     return newM
 end
 
-toquadrature(sys::QuantumStateSpace{TE, QuadratureBasis}) where {TE} = sys
+"""
+    QuantumStateSpace(sys::QuantumStateSpace, basis)
+
+The same system in `basis`. A system already in `basis` is returned as it is, and one in the
+annihilation-creation basis converts to the quadrature basis. The reverse is not implemented,
+since a mode on a `PhaseSpace` has no annihilation operator without a length scale.
+"""
+QuantumStateSpace(sys::QuantumStateSpace{TE, TB}, ::TB) where {TE, TB <: BasisType} = sys
+function QuantumStateSpace(sys::QuantumStateSpace, basis::BasisType)
+    return error("$(sys.name): converting from $(nameof(typeof(sys.basis))) to $(nameof(typeof(basis))) is not implemented")
+end
 
 # Matrix products can nest a complex-valued Num inside a Complex{Num}, which
 # Symbolics.expand chokes on (unwrap tries to build a Complex{Real}). Folding the
@@ -450,28 +617,21 @@ Base.conj(z::Complex{Num}) = Complex(conjpart(real(z)), -conjpart(imag(z)))
 
 expandsimplify(z) = simplify(expand(flattencomplex(z)))
 
-function toquadrature(sys::QuantumStateSpace{TE, LadderBasis}) where {TE}
+function QuantumStateSpace(sys::QuantumStateSpace{TE, AnnihilationCreationBasis}, ::QuadratureBasis) where {TE}
 
-    blockpairs = [quadrature_transform(mode, Dict()) for mode in sys.subspaces]
+    # (x, p) = T (a, a†) for every mode and port, with x = (a + a†)/√2 and p = i(a† - a)/√2
+    c = 1 / sqrt(Num(2))
+    T, Tinv = c * [1 1; -im im], c * [1 im; 1 -im]
+    blocks(k, M) = kron(Matrix{Int}(I, k, k), M)
 
-    left = cat([blockpair[1] for blockpair in blockpairs]...; dims = (1, 2))
-    right = cat([blockpair[2] for blockpair in blockpairs]...; dims = (1, 2))
+    m, n = length(sys.subspaces), length(sys.inputs)
+    left, right = blocks(m, T), blocks(m, Tinv)
+    leftIO, rightIO = blocks(n, T), blocks(n, Tinv)
 
-    oldA = sys.A
-    oldB = sys.B
-    oldC = sys.C
-    oldD = sys.D
-
-    n_ports = length(sys.inputs)
-
-    blockpairsIO = [quadrature_transform(GenericMode(""), Dict()) for ii in 1:n_ports]
-    leftIO = cat([blockpair[1] for blockpair in blockpairsIO]...; dims = (1, 2))
-    rightIO = cat([blockpair[2] for blockpair in blockpairsIO]...; dims = (1, 2))
-
-    newA = expandsimplify.(left * oldA * right)
-    newB = expandsimplify.(left * oldB * rightIO)
-    newC = expandsimplify.(leftIO * oldC * right)
-    newD = expandsimplify.(leftIO * oldD * rightIO)
+    newA = expandsimplify.(left * sys.A * right)
+    newB = expandsimplify.(left * sys.B * rightIO)
+    newC = expandsimplify.(leftIO * sys.C * right)
+    newD = expandsimplify.(leftIO * sys.D * rightIO)
 
     return QuantumStateSpace(sys.name, sys.subspaces, sys.inputs, sys.outputs, newA, newB, newC, newD, sys.timeevol, QuadratureBasis())
 end
